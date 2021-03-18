@@ -5,6 +5,11 @@
 print("Hello")
 ```
 
+## TO DO
+- [x] Learn how to use git
+- [ ] Learn how to use conda
+- [ ] Learn how to use pip
+
 
 ## 0318
 - yaya
