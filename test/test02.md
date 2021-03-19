@@ -1,13 +1,14 @@
-# TEST
+# 智慧影音接軌
 
-```python
-# This is the python code
-print("Hello")
-```
+> Design a video editing software, focusing on making remote teaching videos easily.
 
-**Emphasise**
+## Function
+- 語音指令
+- 自動影片剪接
+- 字幕
+- 分段標題
 
-> This is the quote
+
 
 
 ## TO DO
@@ -18,13 +19,16 @@ print("Hello")
 - [ ] Learn how to use PyQt5
 - [ ] Learn how to use moviepy
 - [ ] Learn how to use FFMPEG
+- [ ] Learn how to use GUI
 
 ## Reference
 - [sololearn](https://www.sololearn.com/learning/1073)
-- [anaconda](https://pypi.org/project/moviepy/)
+- [anaconda](https://docs.anaconda.com/)
 - [MoviePY](https://pypi.org/project/moviepy/)
-- [pyqt5](https://pypi.org/project/moviepy/)
+- [pyqt5](https://www.riverbankcomputing.com/static/Docs/PyQt5/)
+- [SpeechRecognition](https://pypi.org/project/SpeechRecognition/)
 
+## **Minutes**
 ### 0318
 - git (push and pull) 
 - markdown
