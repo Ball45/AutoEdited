@@ -1,11 +1,11 @@
 # 智慧影音接軌
 
 > Design a video editing software, focusing on making remote teaching videos easily.
->> ## Function
->>- 語音指令
->>- 自動影片剪接
->>- 字幕
->>- 分段標題
+ ## Function
+- 語音指令
+- 自動影片剪接
+- 字幕
+- 分段標題
 
 
 
