@@ -13,8 +13,8 @@
 ## TO DO
 - [x] Learn python
 - [x] Learn how to use git
-- [ ] Learn how to use conda
-- [ ] Learn how to use pip
+- [x] Learn how to use conda
+- [x] Learn how to use pip
 - [ ] Learn how to use PyQt5
 - [ ] Learn how to use moviepy
 - [ ] Learn how to use FFMPEG
