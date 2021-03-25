@@ -1,5 +1,7 @@
 from moviepy.editor import *
 
+#IMAGEMAGICK_BINARY = os.getenv ('IMAGEMAGICK_BINARY', 'C:\Program Files\ImageMagick-7.0.8-Q16\convert.exe')
+
 video = VideoFileClip("media/501A.wmv").subclip(50,60)
 
 # Make the text. Many more options are available.
