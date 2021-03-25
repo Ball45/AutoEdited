@@ -1,11 +1,14 @@
 from moviepy.editor import *
+import os
 
-#IMAGEMAGICK_BINARY = os.getenv ('IMAGEMAGICK_BINARY', 'C:\Program Files\ImageMagick-7.0.8-Q16\convert.exe')
+IMAGEMAGICK_BINARY = os.getenv ('IMAGEMAGICK_BINARY', '.\\magick.exe')
 
-video = VideoFileClip("media/501A.wmv").subclip(50,60)
+
+
+video = VideoFileClip("media/0325.MP4").subclip(0,10)
 
 # Make the text. Many more options are available.
-txt_clip = ( TextClip("501A Story",fontsize=70,color='white')
+txt_clip = ( TextClip("0325 Story",fontsize=70,color='white')
              .set_position('center')
              .set_duration(10) )
 
