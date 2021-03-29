@@ -32,6 +32,7 @@ IMAGEMAGICK_BINARY = "C:\\Program Files\\ImageMagick_VERSION\\convert.exe"
 
 ## install moviepy in conda in macos
 1.open conda terminal
+
  ![open conda terminal](https://miro.medium.com/max/4800/1*v3Z3aKuWmZSny590SStldw.png)
  2.type this in a terminal to install moviepy
  ```
@@ -43,7 +44,7 @@ IMAGEMAGICK_BINARY = "C:\\Program Files\\ImageMagick_VERSION\\convert.exe"
  ```
 
  ## moviepy 
- 1. try out an example
+ 1. try out an example.  
  In this example we open a video file, select the subclip between t=50s and t=60s, add a title at the center of the screen, and write the result to a new file:
  ```python
  from moviepy import *
@@ -58,6 +59,7 @@ txt_clip = ( TextClip("My Holidays 2013",fontsize=70,color='white')
 result = CompositeVideoClip([video, txt_clip]) # Overlay text on video
 result.write_videofile("myHolidays_edited.webm",fps=25) # Many options...
 ```
+> video have to save in the same file as the project.
 
- 1. learn [moviepy](https://zulko.github.io/moviepy/) .
+ 2. learn [moviepy](https://zulko.github.io/moviepy/) .
 
