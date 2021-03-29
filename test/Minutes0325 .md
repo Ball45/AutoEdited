@@ -26,11 +26,11 @@ We need to edit **moviepy/config_defaults.py** to provide the path to the ImageM
 IMAGEMAGICK_BINARY = "C:\\Program Files\\ImageMagick_VERSION\\convert.exe"
 ```
 
-## install anaconda in wmacos 
+## install anaconda in macOS
 1. [download anaconda](https://www.anaconda.com/products/individual)
 2. installl the first one
 
-## install moviepy in conda in macos
+## install moviepy in conda in macOS
 1.open conda terminal
 
  ![open conda terminal](https://miro.medium.com/max/4800/1*v3Z3aKuWmZSny590SStldw.png)
@@ -44,8 +44,8 @@ IMAGEMAGICK_BINARY = "C:\\Program Files\\ImageMagick_VERSION\\convert.exe"
  conda install -c conda-forge imagemagick
  ```
 
- ## moviepy 
- 1. Try out an example. (add a title at the center of the screen) 
+ ## Try out moviepy 
+ ### Example -- add a title at the center of the screen
  In this example we open a video file, select the subclip between t=50s and t=60s, add a title at the center of the screen, and write the result to a new file:
  ```python
  from moviepy import *
@@ -62,5 +62,5 @@ result.write_videofile("myHolidays_edited.webm",fps=25) # Many options...
 ```
 > video have to save in the same file as the project.
 
- 2. learn [moviepy](https://zulko.github.io/moviepy/) .
+  ## learn [moviepy](https://zulko.github.io/moviepy/) .
 
