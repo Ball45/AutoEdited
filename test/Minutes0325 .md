@@ -2,6 +2,7 @@
 
 - [x] Learn how to use conda
 - [x] Learn how to use pip
+- [ ] Learn [moviepy](https://zulko.github.io/moviepy/) 
 
 ## install anaconda in windows
 1. download anaconda
@@ -14,7 +15,7 @@ conda create -n name pthon=version
 conda activate name #windows
 ```
 
-## install moviepy
+## install moviepy in windows
 1.  type this in a terminal
  ```
  pip install moviepy
@@ -62,5 +63,4 @@ result.write_videofile("myHolidays_edited.webm",fps=25) # Many options...
 ```
 > video have to save in the same file as the project.
 
-  ## learn [moviepy](https://zulko.github.io/moviepy/) .
 
