@@ -50,17 +50,26 @@ IMAGEMAGICK_BINARY = "C:\\Program Files\\ImageMagick_VERSION\\convert.exe"
  In this example we open a video file, select the subclip between t=50s and t=60s, add a title at the center of the screen, and write the result to a new file:
  ```python
  from moviepy import *
+ import os  
 
-video = VideoFileClip("myHolidays.mp4").subclip(50,60)
+video = VideoFileClip("media/IMG_8315.mov").subclip(0,5)
 
 # Make the text. Many more options are available.
-txt_clip = ( TextClip("My Holidays 2013",fontsize=70,color='white')
+txt_clip = ( TextClip("2021.04.15",fontsize=70,color='white')
              .with_position('center')
-             .with_duration(10) )
+             .with_duration(4) )
 
 result = CompositeVideoClip([video, txt_clip]) # Overlay text on video
-result.write_videofile("myHolidays_edited.webm",fps=25) # Many options...
+result.write_videofile("media/myHolidays_edited.webm",fps=25) # Many options...
 ```
 > video have to save in the same file as the project.
 
-
+### use conda moviepy termianl to run 
+1. type this in a terminal (to the vedio file)
+```
+cd program/video
+```
+2. type this in a terminal (to run the code)
+```
+python test/p03.py
+```
