@@ -69,7 +69,7 @@ result.write_videofile("media/myHolidays_edited.webm",fps=25) # Many options...
 ```
 cd program/video
 ```
-2. type this in a terminal (to run the code)
+2. type this in a terminal (run the code)
 ```
 python test/p03.py
 ```
