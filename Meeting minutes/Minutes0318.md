@@ -9,7 +9,7 @@ mkdir filename
 ## git (push and pull) 
 
 ### download github code
-1. 終端機輸入指令開起專案要匯入的檔案夾
+1. 終端機輸入指令切換目錄到專案要匯入的檔案夾
 ```terminal
 cd filename
 ```

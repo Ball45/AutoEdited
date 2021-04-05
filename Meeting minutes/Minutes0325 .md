@@ -65,7 +65,7 @@ result.write_videofile("media/myHolidays_edited.webm",fps=25) # Many options...
 > video have to save in the same file as the project.
 
 ### use conda moviepy termianl to run 
-1. type this in a terminal (to the vedio file)
+1. type this in a terminal (cd:切換目錄)
 ```
 cd program/video
 ```
