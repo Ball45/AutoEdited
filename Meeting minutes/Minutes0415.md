@@ -3,7 +3,7 @@
 ## TO DO LIST
 - [ ] Learn SpeechRecognition
 - [ ] Video => Audio (MoviePy, FFMPEG)
-- [ ]How to dectect silence of voice file: get time interval of instruction
+- [ ] How to dectect silence of voice file: get time interval of instruction
 - [ ] instruction => text => command
 - [ ] overlap comparison => Join time point
 - [ ] video joint
