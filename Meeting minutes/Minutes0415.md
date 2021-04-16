@@ -10,5 +10,6 @@
 
 ## Install SpeechRecognition
 - Install [pyaudio](https://anaconda.org/anaconda/pyaudio)
-- Chinese SpeechRecognition [example](https://markjong001.pixnet.net/blog/post/246140004)
+- SpeechRecognition example [p05.py](https://github.com/Uberi/speech_recognition/tree/master/examples)
+- Chinese SpeechRecognition [p04.py](https://markjong001.pixnet.net/blog/post/246140004)
 
