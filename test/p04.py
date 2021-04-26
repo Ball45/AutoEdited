@@ -1,7 +1,4 @@
-# 首先 import 這幾個套件
 import speech_recognition
-
-# 將聲音轉成文字的fun 只需要這一小段code
 
 
 def Voice_To_Text():
