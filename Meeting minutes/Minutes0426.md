@@ -1,10 +1,11 @@
 # Install ffmpeg & Convert mp4 to mp3
-## Install ffmpeg in [windows](https://pypi.org/project/ffmpeg-python/)
+
+## Install ffmpeg in anaconda prompt in [windows](https://pypi.org/project/ffmpeg-python/)
 ```
 pip install ffmpeg-python
 ```
 
-## Install ffmpeg in conad in macos
+## Install ffmpeg in anaconda in macos
 Installing ffmpeg from the conda-forge channel can be achieved by adding conda-forge to your channels with:
 ```
 conda config --add channels conda-forge
@@ -26,7 +27,7 @@ conda search ffmpeg --channel conda-forge
 import os
 mp4file = "video.mp4"
 mp3file = "audio.mp3"
-"ffmpeg -i "+mp4file+" "+mp3file
+os.system("ffmpeg -i "+mp4file+" "+mp3file)
 ```
 
 ## Questions
