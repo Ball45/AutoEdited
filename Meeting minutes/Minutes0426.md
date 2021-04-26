@@ -1,14 +1,14 @@
 # Install ffmpeg & Convert mp4 to mp3
-## Install ffmpeg in [windows](https://pypi.org/project/ffmpeg-python/)
+## Install ffmpeg in anaconda prompt in [windows](https://pypi.org/project/ffmpeg-python/)
 ```
-pip install ffmpeg-python
+pip install ffmpeg-python 
 ```
 ## Test 
 ```
 import os
 mp4file = "video.mp4"
 mp3file = "audio.mp3"
-"ffmpeg -i "+mp4file+" "+mp3file
+os.system("ffmpeg -i "+mp4file+" "+mp3file)
 ```
 
 ## Questions
