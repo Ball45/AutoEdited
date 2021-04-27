@@ -1,4 +1,4 @@
-# 0325
+# 0325--Install MoviePy and try out
 
 - [x] Learn how to use conda
 - [x] Learn how to use pip
