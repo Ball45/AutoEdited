@@ -66,7 +66,8 @@ result.write_videofile("media/myHolidays_edited.webm",fps=25) # Many options...
 
 ### Example -- put clips together
 ```python
-from moviepy.editor import VideoFileClip, concatenate_videoclips
+from moviepy.editor 
+import VideoFileClip, concatenate_videoclips
 clip1 = VideoFileClip("media/airplane.mp4")
 clip2 = VideoFileClip("media/thunder.mp4")
 final_clip = concatenate_videoclips([clip1, clip2])
