@@ -1,4 +1,4 @@
 import os
 
-jls_extract_var = media\\guitar.mp3
-"ffmpeg - i " + jls_extraci_varmp3+" - af silencedetect - f null"
+inputfile = "media\\guitar.mp3"
+os.system("ffmpeg - i " + inputfile + " - af silencedetect - f null")
