@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 # 0506--Silence detection
+=======
+# 0506--Sinence detection
+>>>>>>> a6d155edeaafca38b25ad1c94dc6a223ee2a0349
 
 ## Install [Auditok](https://github.com/amsehili/auditok)
 A basic version of auditok will run with standard Python (>=3.4). However, without installing additional dependencies, auditok can only deal with audio files in wav or raw formats. if you want more features, the following packages are needed:
@@ -26,6 +30,7 @@ for i, r in enumerate(audio_regions):
 
 ```
     
+<<<<<<< HEAD
 ## Output non-silence detection
 ```
 Region 0: 0.500s -- 3.150s
@@ -40,3 +45,6 @@ Region 8: 27.150s -- 29.000s
 Region 9: 30.050s -- 32.500s
 
 ```
+=======
+
+>>>>>>> a6d155edeaafca38b25ad1c94dc6a223ee2a0349
