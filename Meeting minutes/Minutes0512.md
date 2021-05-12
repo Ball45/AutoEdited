@@ -8,6 +8,7 @@
         audio = r.record(source)
 
     try:
+        command = ['剪接', '重複']
         s = r.recognize_google(audio, language="zh-TW")
         print("Text: "+s)
         if '剪接' in s :
