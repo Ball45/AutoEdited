@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # 0506--Silence detection
 
 ## Install [Auditok](https://github.com/amsehili/auditok)
