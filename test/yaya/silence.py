@@ -14,7 +14,7 @@ for i, r in enumerate(audio_regions):
     # Regions returned by `split` have 'start' and 'end' metadata fields
     print(
         "Region {i}: {r.meta.start:.3f}s -- {r.meta.end:.3f}s".format(i=i, r=r))
-    # print("Region {i}: {r.meta.start:.3f}s".format(i=i, r=r)+"--" + "{r.meta.end:.3f}s".format(i=i, r=r))
+
     # play detection
     # r.play(progress_bar=True)
 
