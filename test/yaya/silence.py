@@ -35,4 +35,5 @@ for i, r in enumerate(audio_regions):
     num = num+1
 for j in range(num-1):
     # print(str(record_start[j+1]) + 'to' + str(record_end[j]))
-    print(str(record_end[j]) + 'to' + str(record_start[j+1]))
+    # print(str(record_end[j]) + 'to' + str(record_start[j+1]))
+    print(round(record_end[j], 3), 's', 'to', round(record_start[j+1], 3), 's')
