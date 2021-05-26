@@ -33,8 +33,17 @@ for j in range(num-1):
     if duration[j-1]>2.5 and duration[j]>2.5 :  #若前後都有三秒的靜音
         print("instruction : " ,round(record_start[j], 3), 's', 'to', round(record_end[j], 3), 's')
 ```
+### OUTPUT
+```output
+Speech  0: 0.750s -- 7.250s
+Speech  1: 9.800s -- 12.800s
+Speech  2: 15.600s -- 18.458s
+Silence : 7.25 s to 9.8 s, Duration :  2.5500000000000007
+Silence : 12.8 s to 15.6 s, Duration :  2.8000000000000007
+instruction :  9.8 s to 12.8 s
+```
 
-## Read file show all
+## Read file [show all](https://github.com/Uberi/speech_recognition/issues/383) 
 - [ ] 如果show all ,要如何測要”剪接“？
 ```python
 import speech_recognition as sr
@@ -60,4 +69,8 @@ except sr.RequestError as e:
         Text = "無法翻譯{0}".format(e)
 
 ```
+```output
+Text:  {'alternative': [{'transcript': '這是專輯的聲音音檔剪接軟體的測試音檔', 'confidence': 0.88782221}, {'transcript': '這是專題的測驗音檔剪接軟體的測試音檔'}, {'transcript': '這是專題的成音音檔剪接軟體的測試音檔'}, {'transcript': '這是專題的成因音檔剪接軟體的測試音檔'}, {'transcript': '這是專題的測驗音檔剪接單體的測試音檔'}], 'final': True}
+pass
 
+```
