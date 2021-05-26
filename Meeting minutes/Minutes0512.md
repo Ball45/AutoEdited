@@ -18,4 +18,8 @@
     except Exception as e:
         print("Exception: "+str(e))
 ```
-
+### OUTPUT
+```
+Text:  這是專輯的聲音音檔剪接軟體的測試音檔
+剪接
+```

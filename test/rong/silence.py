@@ -26,8 +26,6 @@ for j in range(num-1):
     print("Silence :" ,round(record_end[j], 3), 's', 'to', round(record_start[j+1], 3), 's, Duration : ',duration[j])
 
     if duration[j-1]>2.5 and duration[j]>2.5 :
-        #filename = r.save("media/_{meta.start:.3f}-{meta.end:.3f}.wav")
-        #print("instruction  {i}: {r.meta.start:.3f}s -- {r.meta.end:.3f}s".format(i=i, r=r))
         print("instruction : " ,round(record_start[j], 3), 's', 'to', round(record_end[j], 3), 's')
 
 #for i, r in enumerate(audio_regions):
