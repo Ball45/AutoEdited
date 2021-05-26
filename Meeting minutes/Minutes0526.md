@@ -1,3 +1,7 @@
+# 0526-Read Files
+> [reference](https://github.com/Uberi/speech_recognition/issues/383)
+## Try out
+```python
 import speech_recognition as sr
 r = sr.Recognizer()
 with sr.AudioFile("media\\test1.wav") as source:
@@ -18,3 +22,4 @@ except r.UnknowValueError:
     Text = "無法翻譯"
 except sr.Requesterror as e:
     Text = "無法翻譯{0}".format(e)
+    ```
