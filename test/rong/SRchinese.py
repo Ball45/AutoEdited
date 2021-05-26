@@ -27,7 +27,7 @@ def Voice_To_Text():
     return Text
 ### fun定義結束
 
-##讓我們實際利用看看吧~
+##讓我們實際利用看看吧~ 
 while True :    
     Text = Voice_To_Text()
     print(Text)
