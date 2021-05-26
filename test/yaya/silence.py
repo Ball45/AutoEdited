@@ -8,11 +8,20 @@ num = 0
 
 # split returns a generator of AudioRegion objects
 audio_regions = auditok.split(
+<<<<<<< HEAD
+    "media\\testb1.wav",
+    min_dur=0.2,     # minimum duration of a valid audio event in seconds(0.2)
+    max_dur=100,       # maximum duration of an event(4)
+    # maximum duration of tolerated continuous silence within an event(0.3)
+    max_silence=2,
+    energy_threshold=40  # threshold of detection
+=======
     "media\\OSRus.wav",
     min_dur=0.2,     # minimum duration of a valid audio event in seconds
     max_dur=100,       # maximum duration of an event
     max_silence=2,  # maximum duration of tolerated continuous silence within an event
     energy_threshold=55  # threshold of detection
+>>>>>>> 63ac1d0d87e96201d588c63afa1ffcb841a22d8e
 )
 
 # for i, r in enumerate(audio_regions):

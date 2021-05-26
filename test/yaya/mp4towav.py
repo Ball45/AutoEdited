@@ -1,5 +1,5 @@
 import os
 
-mp4file = "media\\shallow.mp4"
-mp3file = "media\\guitar.mp3"
+mp4file = "media\\testb.wav"
+mp3file = "media\\testb1.wav"
 os.system("ffmpeg -i "+mp4file+" "+mp3file)

@@ -1,6 +1,6 @@
 import speech_recognition as sr
 r = sr.Recognizer()
-with sr.AudioFile("media\\time3.wav") as source:
+with sr.AudioFile("media\\test1.wav") as source:
     audio = r.record(source)
 
 try:
