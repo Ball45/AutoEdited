@@ -10,8 +10,8 @@ num = 0
 audio_regions = auditok.split(
     "media\\OSRus.wav",
     min_dur=0.2,     # minimum duration of a valid audio event in seconds
-    max_dur=4,       # maximum duration of an event
-    max_silence=0.3,  # maximum duration of tolerated continuous silence within an event
+    max_dur=100,       # maximum duration of an event
+    max_silence=2,  # maximum duration of tolerated continuous silence within an event
     energy_threshold=55  # threshold of detection
 )
 
