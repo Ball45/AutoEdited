@@ -8,7 +8,7 @@ num = 0
 
 # split returns a generator of AudioRegion objects
 audio_regions = auditok.split(
-    "media\\test1.m4a",
+    "media\\testb1.wav",
     min_dur=0.2,     # minimum duration of a valid audio event in seconds(0.2)
     max_dur=100,       # maximum duration of an event(4)
     # maximum duration of tolerated continuous silence within an event(0.3)
