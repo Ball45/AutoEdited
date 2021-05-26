@@ -2,17 +2,18 @@ from typing import ClassVar
 import auditok
 import numpy as np
 
-record_start = np.zeros(10)
-record_end = np.zeros(10)
+record_start = np.zeros(1000)
+record_end = np.zeros(1000)
 num = 0
 
 # split returns a generator of AudioRegion objects
 audio_regions = auditok.split(
-    "media\\OSRus.wav",
-    min_dur=0.2,     # minimum duration of a valid audio event in seconds
-    max_dur=4,       # maximum duration of an event
-    max_silence=0.3,  # maximum duration of tolerated continuous silence within an event
-    energy_threshold=55  # threshold of detection
+    "media\\test1.m4a",
+    min_dur=0.2,     # minimum duration of a valid audio event in seconds(0.2)
+    max_dur=100,       # maximum duration of an event(4)
+    # maximum duration of tolerated continuous silence within an event(0.3)
+    max_silence=2,
+    energy_threshold=40  # threshold of detection
 )
 
 # for i, r in enumerate(audio_regions):
@@ -30,10 +31,11 @@ audio_regions = auditok.split(
 
 
 for i, r in enumerate(audio_regions):
+    print(
+        "Region {i}: {r.meta.start:.3f}s -- {r.meta.end:.3f}s".format(i=i, r=r))
     record_start[i] = r.meta.start
     record_end[i] = r.meta.end
     num = num+1
 for j in range(num-1):
-    # print(str(record_start[j+1]) + 'to' + str(record_end[j]))
-    # print(str(record_end[j]) + 'to' + str(record_start[j+1]))
+
     print(round(record_end[j], 3), 's', 'to', round(record_start[j+1], 3), 's')
