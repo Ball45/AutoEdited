@@ -29,13 +29,13 @@ for j in range(num-1):
     duration[j] = record_start[j+1] - record_end[j]
     print("Silence :" ,round(record_end[j], 3), 's', 'to', round(record_start[j+1], 3), 's, Duration : ',duration[j])
 
-        #若前後都有三秒的靜音
-    if duration[j-1]>2.5 and duration[j]>2.5 :
+       
+    if duration[j-1]>2.5 and duration[j]>2.5 :  #若前後都有三秒的靜音
         print("instruction : " ,round(record_start[j], 3), 's', 'to', round(record_end[j], 3), 's')
 ```
 
 ## Read file show all
-- [ ] 如果show all 偵測不到剪接?
+- [ ] 如果show all ,要如何測要”剪接“？
 ```python
 import speech_recognition as sr
 r = sr.Recognizer()
