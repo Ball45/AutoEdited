@@ -1,6 +1,7 @@
 # 0526 -- update silence detecion & SpeechRecognition
 
 ## Detect silence duration
+- [ ] how to detect command?
 ```python
 import auditok
 import numpy as np
@@ -34,6 +35,7 @@ for j in range(num-1):
 ```
 
 ## Read file show all
+- [ ] 如果show all 偵測不到剪接?
 ```python
 import speech_recognition as sr
 r = sr.Recognizer()
@@ -58,4 +60,4 @@ except sr.RequestError as e:
         Text = "無法翻譯{0}".format(e)
 
 ```
-- [ ] 如果show all 偵測不到剪接
+
