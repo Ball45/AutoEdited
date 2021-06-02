@@ -30,7 +30,7 @@ except sr.RequestError as e:
     Text = "無法翻譯{0}".format(e)
 ```
 
-##OUTPUT
+## OUTPUT
 ```
 {'transcript': '這是專輯的聲音音檔剪接軟體的測試音檔', 'confidence': 0.88782215}
 {'transcript': '這是專題的測驗音檔剪接軟體的測試音檔'}
