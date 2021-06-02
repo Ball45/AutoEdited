@@ -15,7 +15,7 @@ try:
     instruction = r.recognize_google(audio, language="zh-TW", show_all=True)
    
     flag = False
-    for t in instruction ['alternative']:
+    for t in instruction['alternative']:
         print(t)
         if "剪接" in t['transcript']:
             flag = True
@@ -28,3 +28,4 @@ except r.UnknowValueError:
     Text = "無法翻譯"
 except sr.RequestError as e:
     Text = "無法翻譯{0}".format(e)
+```
