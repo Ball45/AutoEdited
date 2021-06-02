@@ -1,19 +1,35 @@
 import speech_recognition as sr
+import numpy as np
+
 r = sr.Recognizer()
-with sr.AudioFile("media\\test1.wav") as source:
+with sr.AudioFile("media/testa.wav") as source:
     audio = r.record(source)
+
+instruction = np.zeros(100)
+num = 0
 
 try:
     instruction = r.recognize_google(audio, language="zh-TW", show_all=True)
     #instruction=r.recognize_google(audio_data=audio, key=None, language="zh-TW")
-    print("Text: ", instruction)
-
-    if "剪接" in instruction:
-        print("剪接")
+    #print("Text: ", instruction)
+   
+    flag = False
+    for t in instruction ['alternative']:
+        print(t)
+        if "剪接" in t['transcript']:
+            flag = True
+    if flag:
+        print('剪接')
     else:
         print('pass')
-except Exception as e:
-    print("Exception: "+str(e))
+
+
+    #if "剪接" in instruction:
+     #   print("剪接")
+    #else:
+     #   print('pass')
+#except Exception as e:
+ #   print("Exception: "+str(e))
 # except Exception as e:
  #   print("Exception: "+str(e))
 
