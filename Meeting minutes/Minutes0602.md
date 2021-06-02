@@ -11,9 +11,6 @@ r = sr.Recognizer()
 with sr.AudioFile("media/testa.wav") as source:
     audio = r.record(source)
 
-instruction = np.zeros(100)
-num = 0
-
 try:
     instruction = r.recognize_google(audio, language="zh-TW", show_all=True)
    
