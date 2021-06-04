@@ -1,7 +1,6 @@
 # catch instruction duration
 import auditok
 import numpy as np
-
 record_start = np.zeros(100)
 record_end = np.zeros(100)
 duration = np.zeros(100)
@@ -21,6 +20,10 @@ for i, r in enumerate(audio_regions):
     record_end[i] = r.meta.end
     print(
         "Speech  {i}: {r.meta.start:.3f}s -- {r.meta.end:.3f}s".format(i=i, r=r))
+    if record_end[i] - record_start[i] > 1.000:
+        filename = r.save(
+            "media\\0603\\region_{meta.start:.3f}-{meta.end:.3f}.wav")
+        print("region saved as: {}".format(filename))
 
     num = num+1
 for j in range(num-1):
@@ -31,7 +34,6 @@ for j in range(num-1):
     if duration[j-1] > 2.5 and duration[j] > 2.5:
         print("instruction : ", round(
             record_start[j], 3), 's', 'to', round(record_end[j], 3), 's')
-
 # for i, r in enumerate(audio_regions):
 
     # Regions returned by `split` have 'start' and 'end' metadata fields
@@ -43,5 +45,5 @@ for j in range(num-1):
 
     # region's metadata can also be used with the `save` method
     # (no need to explicitly specify region's object and `format` arguments)
-    #filename = r.save("media/region_{meta.start:.3f}-{meta.end:.3f}.wav")
+    # filename = r.save("media/region_{meta.start:.3f}-{meta.end:.3f}.wav")
     #print("region saved as: {}".format(filename))
