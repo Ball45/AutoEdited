@@ -6,8 +6,8 @@ with sr.AudioFile("media\\test1.wav") as source:
 try:
     s = r.recognize_google(audio_data=audio, key=None,
                            language="zh-TW", show_all=True)  # , show_all=True
-    print(str(s))
-    print("Text: ")
+    # print(str(s))
+    print("Instruction: ")
     if "剪接" in str(s):
         print("剪接")
     else:
