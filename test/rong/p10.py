@@ -1,4 +1,11 @@
 
-import auditok
+from pydub import AudioSegment
 
- auditok OSRus.wav --printf "{id}: [{timestamp}] start:{start}, end:{end}, dur: ˓→{duration}"
+SECOND = 1000
+
+sound = AudioSegment.from_wav("media/testc.wav")
+
+sound = sound[24.75*SECOND:27.75*SECOND]
+
+sound.export('media/cuttestc.mp3')
+
