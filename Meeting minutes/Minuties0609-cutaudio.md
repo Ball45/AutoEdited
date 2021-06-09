@@ -1,7 +1,7 @@
 # cutaudio
 - [reference1](https://twgreatdaily.com/JT0EhXEBfwtFQPkd643n.html)
 - [reference2](https://blog.csdn.net/ZT7524/article/details/104280794)
-- 可以將空白檢調，變成更完整的影片。
+- 可以剪接音檔。
 
 ```python
 from pydub import AudioSegment
