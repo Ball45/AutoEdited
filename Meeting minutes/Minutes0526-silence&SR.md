@@ -2,6 +2,7 @@
 
 ## Detect silence duration
 - [ ] how to detect command?
+- 抓到兩個空白中間的指令。
 ```python
 import auditok
 import numpy as np

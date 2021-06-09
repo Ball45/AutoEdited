@@ -2,6 +2,7 @@
  
  ## Read file [參考](https://blog.csdn.net/ainivip/article/details/98040557)
 - [x] 如果show all ,要如何測要”剪接“？
+-  可以辨識全部選instruction alternative
 
 ```python
 import speech_recognition as sr
