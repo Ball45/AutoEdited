@@ -1,4 +1,4 @@
 import os
-songmp3 = "media/testb.mp3"
-songwav = "media/testb.wav"
+songmp3 = "media/testc.mp3"
+songwav = "media/testc.wav"
 os.system("ffmpeg -i "+songmp3+" "+songwav)

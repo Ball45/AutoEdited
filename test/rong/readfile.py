@@ -2,7 +2,7 @@ import speech_recognition as sr
 import numpy as np
 
 r = sr.Recognizer()
-with sr.AudioFile("media\\test1.wav") as source:
+with sr.AudioFile("media/testc.wav") as source:
     audio = r.record(source)
 
 instruction = np.zeros(100)
