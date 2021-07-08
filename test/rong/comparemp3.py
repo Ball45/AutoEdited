@@ -23,10 +23,10 @@ for t in flame :
     
 
 
-#print ( [frame[0,:,0].max()
- #            for frame in myclip.iter_frames()])
+print ( [frame[0,:,0].max()
+            for frame in myclip.iter_frames()])
 
-#print (myclip.get_frame(0.1))
-
+print (myclip.get_frame(0.1))
+print(np.size(myclip.get_frame(0.1),1))
 
 #myclip.iter_frames()
