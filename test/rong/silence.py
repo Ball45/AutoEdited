@@ -25,11 +25,13 @@ for i, r in enumerate(audio_regions):
     num = num+1
 
 for j in range(num-1):
+    #evaluate silence section length
     duration[j] = record_start[j+1] - record_end[j]
 
     print("Silence ", j, " :", round(record_end[j], 3), 's', 'to', round(
         record_start[j+1], 3), 's, Duration : ', duration[j])
 
+    #if there are two continuous silence sections >2.5 
     if duration[j-1] > 2.5 and duration[j] > 2.5 and speech[j] < 5.0:
         print("instruction : ", round(
             record_start[j], 3), 's', 'to', round(record_end[j], 3), 's')

@@ -1,41 +1,32 @@
+from moviepy.editor import VideoFileClip
 import numpy as np
-from scipy.io import wavfile
-import matplotlib.pyplot as plt
 
-fft_signal1 = np.zeros(100000)
-fft_signal2 = np.zeros(100000)
+frame1 = np.array(100)
+frame2 = np.array(100)
+frame3 = np.array(100)
+frame4 = np.array(100)
+frame5 = np.array(100)
+num = 1
 
- # 讀取檔案
-sampling_freq1, audio1 = wavfile.read(r"media/testc.wav")  
-sampling_freq2, audio2 = wavfile.read(r"media/testb.wav")  
+myclip = VideoFileClip("media/0708.mp4") 
 
+flame = myclip.subclip
+frame5 = myclip.iter_frames()
 
-
-audio1 = audio1 / np.max(audio1)   # 歸一化，標準化
-audio2 = audio2 / np.max(audio2)   # 歸一化，標準化
-
-# 應用傅立葉變換
-fft_signal1 = np.fft.fft(audio1)
-print(fft_signal1)
-fft_signal2 = np.fft.fft(audio2)
-print(fft_signal2)
-# [-0.04022912+0.j         -0.04068997-0.00052721j -0.03933007-0.00448355j
-#  ... -0.03947908+0.00298096j -0.03933007+0.00448355j -0.04068997+0.00052721j]
-
-fft_signal1 = abs(fft_signal1)
-print(fft_signal1)
-fft_signal2 = abs(fft_signal2)
-print(fft_signal2)
-# [0.04022912 0.04069339 0.0395848  ... 0.08001755 0.09203427 0.12889393]
+for t in flame :
+    frame = myclip.get_frame(num)
+    print ('t =' , num , ' :\n' , frame)
+    frame3 = frame1-frame
+    frame4 = (frame3^2)+(frame5^2)
+    print ('t^2= \n', frame4)
+    num = num + 3
+    
 
 
-# 建立時間軸
-Freq1 = np.arange(0, len(fft_signal1))
-Freq2 = np.arange(0, len(fft_signal2))
-# 繪製語音訊號的
-plt.figure()
-plt.plot(Freq1, fft_signal1, color='blue')
-plt.plot(Freq2, fft_signal2, color='red')
-plt.xlabel('Freq (in kHz)')
-plt.ylabel('Amplitude')
-plt.show()
+#print ( [frame[0,:,0].max()
+ #            for frame in myclip.iter_frames()])
+
+#print (myclip.get_frame(0.1))
+
+
+#myclip.iter_frames()
