@@ -1,32 +1,23 @@
 from moviepy.editor import VideoFileClip
+from moviepy.editor import *
 import numpy as np
+import cv2
 
-frame1 = np.array(100)
-frame2 = np.array(100)
-frame3 = np.array(100)
-frame4 = np.array(100)
-frame5 = np.array(100)
-num = 1
+clip = VideoFileClip("media/0708.mp4").subclip(0,1)
+f1 = [frames[0,:,0].max() for frames in clip.iter_frames()]
 
-myclip = VideoFileClip("media/0708.mp4") 
+print('f1 : \n',f1,'\n',len(f1))
 
-flame = myclip.subclip
-frame5 = myclip.iter_frames()
+clipblackwhite = clip.fx(vfx.blackwhite)
+clipgray = VideoFileClip("media/0708N.mp4")
+f3 = [frames for frames in clipblackwhite.get_frame(1)]
+print('f3 : \n' ,f3[0],"\n",len(f3[0]))
 
-for t in flame :
-    frame = myclip.get_frame(num)
-    print ('t =' , num , ' :\n' , frame)
-    frame3 = frame1-frame
-    frame4 = (frame3^2)+(frame5^2)
-    print ('t^2= \n', frame4)
-    num = num + 3
-    
+for flames in clipgray.iter_frames():
+    print(flames.shape)
+    break;
 
-
-print ( [frame[0,:,0].max()
-            for frame in myclip.iter_frames()])
-
-print (myclip.get_frame(0.1))
-print(np.size(myclip.get_frame(0.1),1))
-
-#myclip.iter_frames()
+f2 = [frames[0,:,0].max() for frames in clipblackwhite.iter_frames()]
+#print('f2 : \n',f2)
+#clipblackwhite.write_videofile("media/0708N.mp4")
+cv2.IMREAD_GRAYSCALE: 

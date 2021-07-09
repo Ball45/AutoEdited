@@ -18,23 +18,22 @@ f2 = [frames2[0,:,0].max() for frames2 in clip2.iter_frames()]
 # getting frame at time 3
 frame11 = clip1.get_frame(3)
 
-
-  
 # printing the value of the counter
 print ('Counter Value frames1 : ',len(f1))
 print ('Counter Value frames2 : ',len(f2))
 
 
-for t in range(2):
-    f1=[t for i in range(len(f2))]
+
+#for t in range(2):
+ #   f1=[t for i in range(len(f2))]
    
    # back(f2) minus front(f1)
-    new_frame = []  
-    for i in range(len(f2)):
-        new_value = f2[i] - f1[i]
-        new_frame.append(new_value)    
-    print (new_frame)
-    t+=1
+  #  new_frame = []  
+   # for i in range(len(f2)):
+    #    new_value = f2[i] - f1[i]
+     #   new_frame.append(new_value)    
+    #print (new_frame)
+    #t+=1
 
 
 
