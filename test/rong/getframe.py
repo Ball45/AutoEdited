@@ -8,7 +8,7 @@ import numpy as np
 from moviepy.editor import *
   
 # loading video gfg
-clip = VideoFileClip("media/0708.mp4")
+clip = VideoFileClip("media/tryf.mp4")
 
 # getting only first 5 seconds
 #clip = clip.subclip(5, 10)
@@ -20,8 +20,8 @@ f1 = [frames.max() for frames in clip.get_frame(3)]
 f2 = [frames for frames in clip.get_frame(7)]
 print ('Counter Value frames1 : ',len(f1))
 print ('Counter Value frames2 : ',len(f2))
-print(f1)  
-#print(f2)
+#print(f1)  
+print(f2)
 
 for t in range(0):
     #f1=[t for i in range(len(f2))]
