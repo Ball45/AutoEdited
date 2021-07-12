@@ -1,8 +1,12 @@
 from moviepy.editor import VideoFileClip
 import numpy as np
+import cv2
 
-clip = VideoFileClip("media/0708.mp4") 
- 
+clip = VideoFileClip("media/tryf.mp4") 
+source = cv2.VideoCapture('media/tryf.mp4')
+
+ret, img = source.read()
+gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY) 
 
 # getting only first 5 seconds 
 clip1 = clip.subclip(0, 3) 
