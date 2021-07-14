@@ -10,7 +10,7 @@ num = 0
 
 # split returns a generator of AudioRegion objects
 audio_regions = auditok.split(
-    "media\\0708.wav",
+    "media\\testb1.wav",
     min_dur=0.2,        # minimum duration of a valid audio event in seconds
     max_dur=100,        # maximum duration of an event
     max_silence=2,      # maximum duration of tolerated continuous silence within an event
@@ -34,6 +34,7 @@ for j in range(num-1):
     if duration[j-1] > 2.5 and duration[j] > 2.5 and speech[j] < 5.0:
         print("instruction : ", round(
             record_start[j], 3), 's', 'to', round(record_end[j], 3), 's')
+
 
 # for i, r in enumerate(audio_regions):
 

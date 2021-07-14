@@ -3,6 +3,7 @@
 > Design a video editing software, focusing on making remote teaching videos easily.
  
 ## Function
+在錄影過程中，如果不小心口誤，可 以暫時安靜一小段時間，然後說明一段 語音指令，接著再靜默一小段時間後， 再重新錄製那段話以及之後的內容，最後應用程式就可以自己分析 語音指令，並自動為影片進行剪接工作。
 - 語音指令
 - 自動影片剪接
 - 字幕
