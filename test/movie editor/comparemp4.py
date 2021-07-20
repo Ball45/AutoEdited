@@ -21,7 +21,7 @@ for frames in clip.iter_frames():
     key = cv.waitKey(1)
     if key == ord("q"):
         break
-print(count)
+print('number of frames: ', count)
 time = count/fps
 
 # frame size
@@ -54,8 +54,7 @@ for cutpoint in range(21,25) :
         if min>summ:
             t1=t
             t2=cutpoint
-            min=summ
-            
+            min=summ   
         sum = 0
         summ = 0
 #輸出t1和t2最相近
