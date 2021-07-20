@@ -9,9 +9,7 @@ count = 0
 fps = 30
 sum = 0
 summ = 0
-summm=0
 new_frame = []
-cutpoint=21
 
 
 #轉灰階
@@ -49,16 +47,16 @@ for cutpoint in range(21,25) :
     for t in range(11):
         for k in range(fps):
             for i in np.square(new_frame[t+k] - new_frame[cutpoint+k]):
-                summ = summ + i
-        for j in summ :
-            summm = summm + j    
-        print('t : ', t, ' - ',cutpoint,' =', summm, '\n')
-        if min>summm:
+                sum = sum + i
+        for j in sum :
+            summ = summ + j    
+        print('t : ', t, ' - ',cutpoint,' =', summ, '\n')
+        if min>summ:
             t1=t
             t2=cutpoint
-            min=summm
+            min=summ
             
+        sum = 0
         summ = 0
-        summm = 0
 #輸出t1和t2最相近
 print (t1,t2,min)
