@@ -13,9 +13,10 @@
 from moviepy.editor import *
 import os
 
-clip1 = VideoFileClip("media/airplane.mp4")
-clip2 = VideoFileClip("media/thunder.mp4")
-final_clip = concatenate_videoclips([clip1, clip2])
-final_clip.write_videofile("media/test2.mp4")
+clip1 = VideoFileClip("media/hef.MOV")
+clip2 = VideoFileClip("media/heef.MOV")
+
+final_clip = concatenate_videoclips([clip1, clip2, clip1])
+final_clip.write_videofile("media/testtt.mp4")
 
 

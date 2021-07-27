@@ -4,7 +4,7 @@ import numpy as np
 import cv2 as cv
 
 
-clip = VideoFileClip("media/try720.MOV")
+clip = VideoFileClip("media/test720.MOV")
 count = 0
 fps = 30
 sum = 0
@@ -14,8 +14,10 @@ new_frame = []
 
 #轉灰階
 for frames in clip.iter_frames():
+    #print(frames.shape)
     gray = cv.cvtColor(frames, cv.COLOR_BGR2GRAY)
     #cv.imshow("gray", gray) #播放灰階影片
+    #print(gray.shape)
     new_frame.append(gray)
     count += 1
     key = cv.waitKey(1)
@@ -43,13 +45,13 @@ print('frame size : W =', len(gray[0]), 'H =', len(new_frame[0]))
 
 min = 1000000
 # 比較第t秒和第cutpoint秒的frames，一秒鐘有30個frame(fps=30)
-for cutpoint in range(21,25) :
-    for t in range(11):
-        for k in range(fps):
-            for i in np.square(new_frame[t+k] - new_frame[cutpoint+k]):
+for cutpoint in range(19,24) :
+    for t in range(6):
+        for k in range(fps+60):
+            for i in np.square(new_frame[t*30+k] - new_frame[cutpoint*30+k]):
                 sum = sum + i
         for j in sum :
-            summ = summ + j    
+            summ = summ + j   
         print('t : ', t, ' - ',cutpoint,' =', summ, '\n')
         if min>summ:
             t1=t
@@ -59,3 +61,4 @@ for cutpoint in range(21,25) :
         summ = 0
 #輸出t1和t2最相近
 print (t1,t2,min)
+
