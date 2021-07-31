@@ -1,10 +1,10 @@
-
-from moviepy.editor import VideoFileClip
+#from moviepy.editor import VideoFileClip
+from moviepy.editor import *
 import numpy as np
 import cv2 as cv
 
 
-clip = VideoFileClip("media/test720.MOV")
+clip = VideoFileClip("media/try720.MOV")
 count = 0
 fps = 30
 sum = 0
