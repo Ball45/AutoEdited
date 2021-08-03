@@ -45,9 +45,9 @@ print('frame size : W =', len(gray[0]), 'H =', len(new_frame[0]))
 
 min = 1000000
 # 比較第t秒和第cutpoint秒的frames，一秒鐘有30個frame(fps=30)
-for cutpoint in range(19,24) :
+for cutpoint in range(19,21) :
     for t in range(6):
-        for k in range(fps+60):
+        for k in range(fps+120):
             for i in np.square(new_frame[t*30+k] - new_frame[cutpoint*30+k]):
                 sum = sum + i
         for j in sum :
