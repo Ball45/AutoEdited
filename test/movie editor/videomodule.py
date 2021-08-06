@@ -8,8 +8,8 @@ import cv2 as cv
 
 # mp4 轉成 wav -----------------------------
 #inputfile = "media/tainanvlog.mp4"
-inputfile = "media/try720.MOV"
-wavfile = "media/try720.wav"
+inputfile = "media/IMG_9589.MOV"
+wavfile = "media/IMG_9589.wav"
 os.system("ffmpeg -i "+inputfile+" "+wavfile)
 
 # 測試靜音 ----------------------------------
@@ -93,7 +93,7 @@ for j in range(num-1):
 
         min = 1000000
         # 比較第t秒和第cutpoint秒的frames，一秒鐘有30個frame(fps=30)
-        for cutpoint in range(int(record_start[j+1]),int(record_start[j+1])+1) :
+        for cutpoint in range(int(record_start[j+1]),int(record_start[j+1])+2) :
             for t in range(ex,front):
                 for k in range(fps+120):
                     for i in np.square(new_frame[t*fps+k] - new_frame[cutpoint*fps+k]):
@@ -114,4 +114,4 @@ for j in range(num-1):
         clip2 = VideoFileClip(inputfile).subclip(t2, )
 
         final_clip = concatenate_videoclips([clip1, clip2])
-        final_clip.write_videofile("media/video_out.mp4")
+        final_clip.write_videofile("media/video+2_out.mp4")
