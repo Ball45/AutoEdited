@@ -1,3 +1,4 @@
+FONT_URL='media/wt024.ttf'
 import auditok
 import numpy as np
 import speech_recognition as sr
@@ -15,7 +16,7 @@ sub=[]
 # split returns a generator of AudioRegion objects
 audio_regions = auditok.split(
     "media/IMG_9589.wav",
-    min_dur=0.2,        # minimum duration of a valid audio event in seconds
+    min_dur=0.1,        # minimum duration of a valid audio event in seconds
     max_dur=100,        # maximum duration of an event
     max_silence=2,      # maximum duration of tolerated continuous silence within an event
     energy_threshold=40  # threshold of detection
@@ -64,7 +65,7 @@ for i, r in enumerate(audio_regions):
             "Could not request results from Google Speech Recognition service; {0}".format(e))
         
 print(sub)
-def annotate(clip, txt, txt_color='red', fontsize=50, font='Xolonium-Bold'):
+def annotate(clip, txt, txt_color='red', fontsize=50, font=FONT_URL):
     """ Writes a text at the bottom of the clip. """
     txtclip = editor.TextClip(txt, fontsize=fontsize, font=font, color=txt_color)
     cvc = editor.CompositeVideoClip([clip, txtclip.set_pos(('center', 'bottom'))])

@@ -1,9 +1,10 @@
+FONT_URL='media/wt024.ttf'
 from moviepy import editor
 import os.path as op
 
 def annotate(clip, txt, txt_color='red', fontsize=50, font='Xolonium-Bold'):
     """ Writes a text at the bottom of the clip. """
-    txtclip = editor.TextClip(txt, fontsize=fontsize, font="系統字體-細體", color=txt_color)
+    txtclip = editor.TextClip(txt, fontsize=fontsize, font=FONT_URL, color=txt_color)
     cvc = editor.CompositeVideoClip([clip, txtclip.set_pos(('center', 'bottom'))])
     return cvc.set_duration(clip.duration)
 
