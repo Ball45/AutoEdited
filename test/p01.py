@@ -4,10 +4,10 @@ import os
 IMAGEMAGICK_BINARY = os.getenv('IMAGEMAGICK_BINARY', '.\\magick.exe')
 
 
-video = VideoFileClip("media/0325.MP4").subclip(0, 10)
+video = VideoFileClip("media/video9589_out.mp4").subclip(0, 10)
 
 # Make the text. Many more options are available.
-txt_clip = (TextClip("0325 Story", fontsize=70, color='white')
+txt_clip = (TextClip("0325 你好嗎", fontsize=70, color='white', font="Songti-SC-Black")
             .set_position('center')
             .set_duration(10))
 
