@@ -3,7 +3,7 @@ import auditok
 import numpy as np
 import speech_recognition as sr
 from moviepy.editor import *
-import os
+import os 
 from moviepy import editor
 
 record_start = np.zeros(100)
@@ -16,7 +16,7 @@ sub=[]
 # split returns a generator of AudioRegion objects
 audio_regions = auditok.split(
     "media/IMG_9589.wav",
-    min_dur=0.1,        # minimum duration of a valid audio event in seconds
+    min_dur=0.01,        # minimum duration of a valid audio event in seconds
     max_dur=100,        # maximum duration of an event
     max_silence=2,      # maximum duration of tolerated continuous silence within an event
     energy_threshold=40  # threshold of detection
@@ -42,8 +42,8 @@ for i, r in enumerate(audio_regions):
         #print("Google Speech Recognition thinks you said " + r.recognize_google(audio_data=audio, key=None, language="zh-TW", show_all=True))
         
         text=str(s)
-        spe=(int(record_start[i]), int(record_end[i]))
-        sub.append(((spe), text))
+        rei=(int(record_start[i]), int(record_end[i]))
+        sub.append(((rei), text))
         #sub.append(text)
         #spe=(int(record_end[i]),)
         #text=' '
@@ -65,7 +65,7 @@ for i, r in enumerate(audio_regions):
             "Could not request results from Google Speech Recognition service; {0}".format(e))
         
 print(sub)
-def annotate(clip, txt, txt_color='red', fontsize=50, font=FONT_URL):
+def annotate(clip, txt, txt_color='white', fontsize=50, font=FONT_URL):
     """ Writes a text at the bottom of the clip. """
     txtclip = editor.TextClip(txt, fontsize=fontsize, font=font, color=txt_color)
     cvc = editor.CompositeVideoClip([clip, txtclip.set_pos(('center', 'bottom'))])
