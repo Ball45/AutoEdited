@@ -4,13 +4,13 @@ import numpy as np
 import cv2 as cv
 
 
-clip = VideoFileClip("media/try720.MOV")
+clip = VideoFileClip("media/IMG_9589.MOV")
 count = 0
 fps = 30
 sum = 0
 summ = 0
 new_frame = []
-
+add = 0
 
 #轉灰階
 for frames in clip.iter_frames():
@@ -45,20 +45,29 @@ print('frame size : W =', len(gray[0]), 'H =', len(new_frame[0]))
 
 min = 1000000
 # 比較第t秒和第cutpoint秒的frames，一秒鐘有30個frame(fps=30)
-for cutpoint in range(19,21) :
-    for t in range(6):
-        for k in range(fps+120):
-            for i in np.square(new_frame[t*30+k] - new_frame[cutpoint*30+k]):
-                sum = sum + i
-        for j in sum :
-            summ = summ + j   
-        print('t : ', t, ' - ',cutpoint,' =', summ, '\n')
-        if min>summ:
-            t1=t
-            t2=cutpoint
-            min=summ   
-        sum = 0
-        summ = 0
+for cutpoint in range(40,42) :
+    for t in range(4,14):
+        for sec in range(0,2) :
+            if add == 1 :
+                tt=t+0.5
+                time=t*30+15
+                add = 0
+            else :
+                add=1
+                tt=t
+                time = t*30
+            for k in range(fps+120):
+                for i in np.square(new_frame[time+k] - new_frame[cutpoint*30+k]):
+                    sum = sum + i
+            for j in sum :
+                summ = summ + j   
+            print('t : ', tt, ' - ',cutpoint,' =', summ, '\n')
+            if min>summ:
+                t1=tt
+                t2=cutpoint
+                min=summ   
+            sum = 0
+            summ = 0
 #輸出t1和t2最相近
 print (t1,t2,min)
 
