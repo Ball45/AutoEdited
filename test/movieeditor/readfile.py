@@ -1,7 +1,6 @@
 import speech_recognition as sr
-from moviepy.editor import *
 r = sr.Recognizer()
-with sr.AudioFile("media\\08141.wav") as source:
+with sr.AudioFile("media\\test1.wav") as source:
     audio = r.record(source)
 
 try:

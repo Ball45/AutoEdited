@@ -1,5 +1,5 @@
 import speech_recognition as sr
-
+from pydub import *
 
 # obtain audio from the microphone
 r = sr.Recognizer()
