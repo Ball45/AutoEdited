@@ -20,3 +20,12 @@ final_clip = concatenate_videoclips([clip1, clip2, clip1])
 final_clip.write_videofile("media/testtt.mp4")
 
 
+# 剪接 -------------------------------------
+section.append(())
+print("section : ",section)
+def annotate(clip):
+    cvc = CompositeVideoClip(clip)
+    return cvc.set_duration(clip.duration)
+annotated_clips = [annotate(clip.subclip(from_t, to_t)) for (from_t, to_t) in section]
+final_clip = concatenate_videoclips(annotated_clips)
+final_clip.write_videofile("media/IMG_95899_out812.mp4")
