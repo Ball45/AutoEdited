@@ -1,6 +1,6 @@
 import os
-songmp4 = "./media/2021-08-27.mp4"
-songwav = "./media/2021-08-27.wav"
+songmp4 = "..\\..\\media\\2021-08-27.mp4"
+songwav = "..\\..\\media\\2021-08-27.wav"
 os.system("ffmpeg -i "+songmp4+" "+songwav)
 
 
