@@ -1,12 +1,15 @@
 '''
 Please place video file into 'resources' directory.
 '''
-
-FONT_URL='../../resources/wt024.ttf'
 from moviepy import editor
 import os, speech_recognition
+if os.path.exists('./resources/wt024.ttf'):
+    FONT_URL='./resources/wt024.ttf'
 
-os.system("echo pwd: $(pwd)")
+
+
+
+os.system("echo pwd=%cd%")
 
 # handling with video source
 source_file = input('Enter your video stream and file name:')
@@ -14,6 +17,7 @@ slash_pos = source_file.rfind('/')
 dot_pos = source_file.rfind('.')
 source_path, source_name, source_format = source_file[:slash_pos+1], source_file[slash_pos+1:dot_pos], source_file[dot_pos:]
 source_clip = editor.VideoFileClip(source_file)
+
 
 class Subtitle:
     def __init__(self, time_start, time_end, string=' '):
@@ -69,7 +73,7 @@ if not os.path.exists(source_path + source_name + '.srt'):
     os.system("autosub -S zh-CN -D zh-CN " + source_file)
 
 # read the srt file
-subtitle_file = open(source_path + source_name + '.srt')
+subtitle_file = open(source_path + source_name + '.srt', encoding='utf-8')
 subtitle_line = subtitle_file.readlines()
 subtitle_file.close()
 
@@ -171,7 +175,7 @@ source_clip = editor.VideoFileClip("movie_2.mp4")
 '''
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
-def annotate(clip, txt, txt_color='red', fontsize=50, font='Xolonium-Bold'):
+def annotate(clip, txt, txt_color='black', fontsize=50, font='Xolonium-Bold'):
     """ Writes a text at the bottom of the clip. """
     txtclip = editor.TextClip(txt, fontsize=fontsize, font=FONT_URL, color=txt_color)
     cvc = editor.CompositeVideoClip([clip, txtclip.set_pos(('center', 'bottom'))])
