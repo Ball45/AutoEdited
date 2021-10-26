@@ -7,6 +7,7 @@ import numpy as np
 import auditok
 from pydub import AudioSegment
 import speech_recognition as sr
+from moviepy.editor import *
 from moviepy import editor
 import cv2 as cv
 
@@ -44,6 +45,18 @@ class Subtitle:
         return str(rh).zfill(2) + ':' + str(rm).zfill(2) + ':' + str(rs).zfill(2) + ',' + '000'
 
 
+sec = 0
+
+class WorkThread(QThread):
+    timer = pyqtSignal() # 每隔一秒發送一次信號
+    end = pyqtSignal()   # 技術完成後發送一次信號
+    def run(self):
+        while True:
+            self.sleep(1) # 休眠一秒
+            if sec == 100:
+                self.end.emit() # 發送end信號
+                break;
+            self.timer.emit()  # 發送timer信號
 
 class ListViewDemo(QWidget):
     def __init__(self, parent = None):
@@ -56,42 +69,80 @@ class ListViewDemo(QWidget):
         layout = QVBoxLayout()
         self.listWidget = QListWidget()
 
+        # 按鈕選擇檔案
         self.buttonOpenFile = QPushButton('Select File')
         self.buttonOpenFile.clicked.connect(self.LoadPath) 
         layout.addWidget(self.buttonOpenFile)
 
+        # 按鈕移除檔案
         self.buttonRemoveFile = QPushButton('Remove File')
         self.buttonRemoveFile.clicked.connect(self.RemovePath)
         layout.addWidget(self.buttonRemoveFile)
 
-        self.buttonRemoveAll = QPushButton('Remove All')
+
+        self.buttonRemoveAll = QPushButton('Empty List')
+
         self.buttonRemoveAll.clicked.connect(self.DelListItem)
         layout.addWidget(self.buttonRemoveAll)
 
-        self.listview = QListView()
-        #建立一個空的模型
-        self.listModle = QStringListModel()
+        # 建立選取影片列表
+        self.listview = QListView()       
+        self.listModle = QStringListModel() #建立一個空的模型
         #self.list = ["列表項1", "列表項2", "列表項3"]
          #將數據放到空的模型內
         #self.listModle.setStringList(self.list)
         self.listview.setModel(self.listModle)
         layout.addWidget(self.listview)
 
-        self.combobox = QComboBox()
-        self.combobox.setItemText(3, "Tw")
-        layout.addWidget(self.combobox)
+        # 選擇語言
+        #self.combobox = QComboBox()
+        #self.combobox.setItemText(3, "Tw")
+        #layout.addWidget(self.combobox)
 
+        # 按鈕編輯影片
         self.buttonClip = QPushButton('Edit Video')
+        self.buttonClip.clicked.connect(self.lable)
+
         self.buttonClip.clicked.connect(self.VideoEdit)
         layout.addWidget(self.buttonClip)
 
+
         self.buttonClip = QPushButton('Generate Subtitle')
         self.buttonClip.clicked.connect(self.GenerateSubtitle)
+        self.buttonClip.clicked.connect(self.lable)
         layout.addWidget(self.buttonClip)
 
+        self.statusLabel = QLabel()
+        #self.statusLabel.setText("            ")
 
+        self.statusbar = QStatusBar(self)
+        layout.addWidget(self.statusbar)
+
+        self.progressBar = QProgressBar()
+        self.progressBar.setRange(0,100)
+        #layout.addWidget(self.progressBar)
+        self.statusbar.addPermanentWidget(self.statusLabel, stretch=2)
+        self.statusbar.addPermanentWidget(self.progressBar, stretch=10)
+        
+        self.workThread = WorkThread()
+
+        self.workThread.timer.connect(self.countTime)
+        self.workThread.end.connect(self.end)
         self.setLayout(layout)
-    
+
+    def countTime(self):
+        global sec
+        sec += 1
+        self.statusLabel.setText(str(sec))
+        self.progressBar.setValue(sec)
+
+    def end(self):
+        QMessageBox.information(self,'Message','ENDDDDD',QMessageBox.Ok)
+        self.statusLabel.setText('ENDDDDD')
+
+    def work(self):
+        self.workThread.start() 
+      
 
     def LoadPath(self):
         fname,_ = QFileDialog.getOpenFileName(self, '打開文件', '.', '文件(*.MOV *.mp4)')
@@ -112,33 +163,33 @@ class ListViewDemo(QWidget):
         for i in range(row1):
             self.listModle.removeRow(self.listview.modelColumn())
 
+    def lable(self):
+        row = self.listModle.rowCount()
+        if row == 1:
+            self.statusLabel.setText('影片製作中...')
+            print('影片製作中...')
+        if row == 0:
+            QMessageBox.information(self,'Message','請選擇影片',QMessageBox.Ok)
+            #self.statusLabel.setText('選擇影片')
+
     def VideoEdit(self):
         # mp4 轉成 wav -----------------------------
         #inputfile = "media/tainanvlog.mp4"
         row = self.listModle.rowCount()
-        for i in range(row):
+        print(row)
+        for i in range(row):   
+            self.buttonClip.setEnabled(False)
+            self.statusLabel.setText('影片')
             source_file = self.listModle.stringList()[i]
             slash_pos = source_file.rfind('/')
             dot_pos = source_file.rfind('.')
             source_path, source_name, source_format = source_file[:slash_pos+1], source_file[slash_pos+1:dot_pos], source_file[dot_pos:]
-            wavfile = source_path + source_name + '.wav'
-            outfile = source_path + source_name + '_out.mp4'
-
+            wavfile = source_path + source_name + '.wav'     # 執行完刪除 *wav
+            outfile = source_path + source_name + '_out.mp4' # 把檔案存在自己想要的地方
+            
 
             if not os.path.exists(wavfile):
                 os.system("ffmpeg -i "+source_file+" "+source_path + source_name + '.wav')
-
-
-            #轉灰階--------------------------------------
-            clip = editor.VideoFileClip(source_file)
-            gray_scalar = []
-            for frames in clip.iter_frames():
-                gray = cv.cvtColor(frames, cv.COLOR_BGR2GRAY)
-                # cv.imshow("gray", gray) #播放灰階影片
-                gray_scalar.append(gray)
-                key = cv.waitKey(1)
-                if key == ord("q"):
-                    break
 
             # 找出fps---------------------------------------
             clip = cv.VideoCapture(source_file)
@@ -194,14 +245,32 @@ class ListViewDemo(QWidget):
                             before_ins_end = int(record_end[j-1])      #指令前的結束時間
                             if (before_ins_end-5) < 0 :
                                 before_ins_start=0
+                                detectsec = float(before_ins_end)
                             else :
                                 before_ins_start = before_ins_end-5    #指令前的起始時間
+                                detectsec = 5
                             
                             after_ins_start = float(record_start[j+1]) # 指令後的起始時間
+                            print('detectsec:',detectsec)
                             
-                            for i in range(5*fps):
-                                before_ins = gray_scalar[before_ins_start*fps+i]
-                                after_ins = gray_scalar[round(after_ins_start*fps)]
+            #轉灰階--------------------------------------
+                            grayclip = VideoFileClip(source_file).subclip(round(before_ins_start,2),round(after_ins_start,2))
+                            gray_scalar = []
+                            
+                            for frames in grayclip.iter_frames():
+                                gray = cv.cvtColor(frames, cv.COLOR_BGR2GRAY)
+                                #cv.imshow("gray", gray) #播放灰階影片
+                                gray_scalar.append(gray)
+                                key = cv.waitKey(1)
+                                if key == ord("q"):
+                                    break;
+                            
+                            print('轉灰階成功clip :', round(before_ins_start,2),'s - ', round(after_ins_start,2),'s ')        
+                            print(len(gray_scalar))
+                            
+                            for i in range(detectsec*fps):
+                                before_ins = gray_scalar[i]
+                                after_ins = gray_scalar[len(gray_scalar)-1]
                                 
                                 d = (before_ins-after_ins)**2
                                 
@@ -217,10 +286,10 @@ class ListViewDemo(QWidget):
                             else :
                                 file = source_file
                                 cut+=1
-
-                            clip1 = editor.VideoFileClip(file).subclip(0, cutpoint)
-                            clip2 = editor.VideoFileClip(file).subclip(after_ins_start, )
-                            final_clip = editor.concatenate_videoclips([clip1, clip2])
+                        
+                            clip1 = VideoFileClip(file).subclip(0, cutpoint)
+                            clip2 = VideoFileClip(file).subclip(after_ins_start, )
+                            final_clip = concatenate_videoclips([clip1, clip2])
                         else:
                             print(ins,'pass')
                             pass
@@ -232,7 +301,9 @@ class ListViewDemo(QWidget):
 
             final_clip.write_videofile(outfile)
             final_clip.close()
-
+            sec=100
+            self.statusLabel.setText('影片剪接完成')
+    
     def GenerateSubtitle(self):
         for i in range(self.listModle.rowCount()):
             source_file = self.listModle.stringList()[i]
@@ -305,10 +376,11 @@ class ListViewDemo(QWidget):
 
             final_clip = editor.concatenate_videoclips(annotated_clips)
             final_clip.write_videofile(source_name + "_with_subtitle.mp4")
-            
-if __name__ == "__main__" :
+
+if __name__ == "__main__" :   
     app = QApplication(sys.argv)
-    app.setWindowIcon(QIcon('./resources/firefox-icon-02.png'))
+    app.setWindowIcon(QIcon('./PyQt5/1179069.png'))
     win = ListViewDemo()
     win.show()
+    
     sys.exit(app.exec_())
