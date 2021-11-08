@@ -263,7 +263,7 @@ class ListViewDemo(QWidget):
                                 gray_scalar.append(gray)
                                 key = cv.waitKey(1)
                                 if key == ord("q"):
-                                    break;
+                                    break
                             
                             print('轉灰階成功clip :', round(before_ins_start,2),'s - ', round(after_ins_start,2),'s ')        
                             print(len(gray_scalar))
