@@ -280,7 +280,6 @@ class ListViewDemo(QWidget):
                                 #print('t : ', round(before_ins_start*fps+i+j, 1)/fps,' ', d.sum())          
                             #輸出最相近
                             print(cutpoint, min)
-            # 剪接 -------------------------------------
                             subclip_sec.append(float(cutpoint))
                             subclip_sec.append(float(after_ins_start))
                         else:
