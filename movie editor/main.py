@@ -43,6 +43,7 @@ record_end = np.zeros(1000)
 silence_duration = np.zeros(1000)
 speech_duration = np.zeros(1000)
 num = 0
+ins_loca=[]
 subclip_sec=[]
 
 for i, r in enumerate(audio_regions):
@@ -68,6 +69,7 @@ for j in range(num-1):
             ins = r.recognize_google(audio_data=audio, key=None,language="zh-TW", show_all=True)
             if "剪接" in str(ins):
                 print("instruction ", round(record_start[j], 3), 's to', round(record_end[j], 3), 's'," : 剪接")      
+
 # 偵測重複 ----------------------------------
                 min = 100000000000
                 
@@ -82,7 +84,18 @@ for j in range(num-1):
                   
                 after_ins_start = float(record_start[j+1]) # 指令後的起始時間
                 print('往前抓＿秒進行辨識:',sec)
-                  
+                
+                
+                ins_loca.append(float(before_ins_start))
+                ins_loca.append(float(after_ins_start))
+                
+                for i in range(1,len(ins_loca)-1,2):
+                    if ins[i]> ins[i+1]:
+                        del ins[i]
+                        del ins[i+1]
+                print('ins:',ins_loca)
+
+                          
 #轉灰階--------------------------------------
                 grayclip = VideoFileClip(source_file).subclip(round(before_ins_start,2),round(after_ins_start,2))
                 gray_scalar = []
