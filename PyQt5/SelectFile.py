@@ -213,7 +213,7 @@ class ListViewDemo(QWidget):
             silence_duration = np.zeros(1000)
             speech_duration = np.zeros(1000)
             num = 0
-            cut=1
+            subclip_sec=[]
 
             for i, r in enumerate(audio_regions):
                 record_start[i] = r.meta.start
@@ -237,7 +237,7 @@ class ListViewDemo(QWidget):
                     try:
                         ins = r.recognize_google(audio_data=audio, key=None,language="zh-TW", show_all=True)
                         if "剪接" in str(ins):
-                            print("Instruction : 剪接")                
+                            print("instruction ", round(record_start[j], 3), 's to', round(record_end[j], 3), 's'," : 剪接")                
             # 偵測重複 ----------------------------------
                             min = 100000000000
                             
@@ -251,7 +251,7 @@ class ListViewDemo(QWidget):
                                 detectsec = 5
                             
                             after_ins_start = float(record_start[j+1]) # 指令後的起始時間
-                            print('detectsec:',detectsec)
+                            print('往前抓＿秒進行辨識:',detectsec)
                             
             #轉灰階--------------------------------------
                             grayclip = VideoFileClip(source_file).subclip(round(before_ins_start,2),round(after_ins_start,2))
@@ -280,16 +280,8 @@ class ListViewDemo(QWidget):
                                 #print('t : ', round(before_ins_start*fps+i+j, 1)/fps,' ', d.sum())          
                             #輸出最相近
                             print(cutpoint, min)
-            # 剪接 -------------------------------------
-                            if cut != 1 :
-                                file = final_clip
-                            else :
-                                file = source_file
-                                cut+=1
-                        
-                            clip1 = VideoFileClip(file).subclip(0, cutpoint)
-                            clip2 = VideoFileClip(file).subclip(after_ins_start, )
-                            final_clip = concatenate_videoclips([clip1, clip2])
+                            subclip_sec.append(float(cutpoint))
+                            subclip_sec.append(float(after_ins_start))
                         else:
                             print(ins,'pass')
                             pass
@@ -299,10 +291,26 @@ class ListViewDemo(QWidget):
                     except sr.RequestError as e:
                         ins = "無法翻譯{0}".format(e)
 
+            subclip_sec.insert(0, 0)
+            subclip_sec.append(' ')
+            print('subclip[(from_t, to_t)]:',subclip_sec)
+
+            # 剪接 -------------------------------------
+            clips = []
+            for i in range(0,len(subclip_sec),2):
+                if i == (len(subclip_sec)-2):
+                    clip = VideoFileClip(source_file).subclip(subclip_sec[i], )
+                    #print("subclip(",subclip_sec[i],", )")  
+                else:
+                    clip = VideoFileClip(source_file).subclip(subclip_sec[i], subclip_sec[i+1])
+                    #print("subclip(",subclip_sec[i],", ",subclip_sec[i+1],")")  
+                clips.append(clip)
+            print ('sub: ', clips)
+            final_clip = concatenate_videoclips(clips)
             final_clip.write_videofile(outfile)
             final_clip.close()
-            sec=100
-            self.statusLabel.setText('影片剪接完成')
+
+
     
     def GenerateSubtitle(self):
         for i in range(self.listModle.rowCount()):
