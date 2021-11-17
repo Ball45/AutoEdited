@@ -103,8 +103,8 @@ print('ins:',ins_loca)
 
                           
 #轉灰階--------------------------------------
-for i in range(1,len(ins_loca)-1,2):
-    grayclip = VideoFileClip(source_file).subclip(round(before_ins_start,2),round(after_ins_start,2))
+for i in range(0,len(ins_loca)-1,2):
+    grayclip = VideoFileClip(source_file).subclip(round(ins_loca[i],2),round(ins_loca[i+1],2))
     gray_scalar = []
     for frames in grayclip.iter_frames():
         gray = cv.cvtColor(frames, cv.COLOR_BGR2GRAY)
@@ -132,9 +132,6 @@ for i in range(1,len(ins_loca)-1,2):
     print(cutpoint, min)
     subclip_sec.append(float(cutpoint))
     subclip_sec.append(float(after_ins_start))
-
-
-
 
 subclip_sec.insert(0, 0)
 subclip_sec.append(' ')

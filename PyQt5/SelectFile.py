@@ -106,6 +106,7 @@ class ListViewDemo(QWidget):
         self.buttonClip.clicked.connect(self.VideoEdit)
         layout.addWidget(self.buttonClip)
 
+
         self.buttonSub = QPushButton('Generate Subtitle')
         self.buttonSub.clicked.connect(self.GenerateSubtitle)
         self.buttonSub.clicked.connect(self.lable)
@@ -208,6 +209,7 @@ class ListViewDemo(QWidget):
             silence_duration = np.zeros(1000)
             speech_duration = np.zeros(1000)
             num = 0
+            ins_loca=[]
             subclip_sec=[]
 
             for i, r in enumerate(audio_regions):
@@ -218,7 +220,7 @@ class ListViewDemo(QWidget):
             for j in range(num-1):
                 # evaluate silence section length
                 silence_duration[j] = record_start[j+1] - record_end[j]
-                print("Silence ", j, " :", round(record_end[j], 3), 's', 'to', round(record_start[j+1], 3), 's, Duration : ', silence_duration[j])
+                print("Silence ", j, " :", round(record_end[j], 3), 's', 'to', round(record_start[j+1], 3), 's, Duration : ', round(silence_duration[j],3))
 
                 # if there are two continuous silence sections >2.5 
                 if silence_duration[j-1] > 1.4 and silence_duration[j] > 1.4 and speech_duration[j] < 5.0:
@@ -232,59 +234,70 @@ class ListViewDemo(QWidget):
                     try:
                         ins = r.recognize_google(audio_data=audio, key=None,language="zh-TW", show_all=True)
                         if "剪接" in str(ins):
-                            print("instruction ", round(record_start[j], 3), 's to', round(record_end[j], 3), 's'," : 剪接")                
-            # 偵測重複 ----------------------------------
-                            min = 100000000000
-                            
+                            print("instruction ", round(record_start[j], 3), 's to', round(record_end[j], 3), 's'," : 剪接")      
+
                             # 抓影片前5秒進行辨識
                             before_ins_end = int(record_end[j-1])      #指令前的結束時間
                             if (before_ins_end-5) < 0 :
                                 before_ins_start=0
-                                detectsec = float(before_ins_end)
+                                sec = float(before_ins_end)
                             else :
                                 before_ins_start = before_ins_end-5    #指令前的起始時間
-                                detectsec = 5
+                                sec = 5
                             
                             after_ins_start = float(record_start[j+1]) # 指令後的起始時間
-                            print('往前抓＿秒進行辨識:',detectsec)
-                            
-            #轉灰階--------------------------------------
-                            grayclip = VideoFileClip(source_file).subclip(round(before_ins_start,2),round(after_ins_start,2))
-                            gray_scalar = []
-                            
-                            for frames in grayclip.iter_frames():
-                                gray = cv.cvtColor(frames, cv.COLOR_BGR2GRAY)
-                                #cv.imshow("gray", gray) #播放灰階影片
-                                gray_scalar.append(gray)
-                                key = cv.waitKey(1)
-                                if key == ord("q"):
-                                    break
-                            
-                            print('轉灰階成功clip :', round(before_ins_start,2),'s - ', round(after_ins_start,2),'s ')        
-                            print(len(gray_scalar))
-                            
-                            for i in range(detectsec*fps):
-                                before_ins = gray_scalar[i]
-                                after_ins = gray_scalar[len(gray_scalar)-1]
-                                
-                                d = (before_ins-after_ins)**2
-                                
-                                if min > d.sum():
-                                    cutpoint = (before_ins_start*fps+i)/fps 
-                                    min = d.sum()
-                                #print('t : ', round(before_ins_start*fps+i+j, 1)/fps,' ', d.sum())          
-                            #輸出最相近
-                            print(cutpoint, min)
-                            subclip_sec.append(float(cutpoint))
-                            subclip_sec.append(float(after_ins_start))
+                            print('往前抓＿秒進行辨識:',sec)
+                                    
+                            ins_loca.append(float(before_ins_start))
+                            ins_loca.append(float(after_ins_start))
+                        
                         else:
                             print(ins,'pass')
                             pass
-
+                    
                     except sr.UnknownValueError:   
                         ins = "無法翻譯"
                     except sr.RequestError as e:
                         ins = "無法翻譯{0}".format(e)
+                            
+            for i in range(1,len(ins_loca)-1,2):
+                if ins[i]> ins[i+1]:
+                    del ins[i]
+                    del ins[i+1]
+            print('ins:',ins_loca)
+
+                                    
+        # 轉灰階--------------------------------------
+            for i in range(0,len(ins_loca)-1,2):
+                grayclip = VideoFileClip(source_file).subclip(round(ins_loca[i],2),round(ins_loca[i+1],2))
+                gray_scalar = []
+                for frames in grayclip.iter_frames():
+                    gray = cv.cvtColor(frames, cv.COLOR_BGR2GRAY)
+                    #cv.imshow("gray", gray) #播放灰階影片
+                    gray_scalar.append(gray)
+                    key = cv.waitKey(1)
+                    if key == ord("q"):
+                        break;
+                print('轉灰階成功clip :', round(before_ins_start,2),'s - ', round(after_ins_start,2),'s ')        
+                #print(len(gray_scalar))
+            
+            # 偵測重複 ----------------------------------
+                min = 100000000000
+                
+                for i in range(sec*fps):
+                    before_ins = gray_scalar[i]
+                    after_ins = gray_scalar[len(gray_scalar)-1]
+                    
+                    d = (before_ins-after_ins)**2
+                    
+                    if min > d.sum():
+                        cutpoint = (before_ins_start*fps+i)/fps 
+                        min = d.sum()
+                    #print('t : ', round(before_ins_start*fps+i+j, 1)/fps,' ', d.sum())          
+                #輸出最相近
+                print(cutpoint, min)
+                subclip_sec.append(float(cutpoint))
+                subclip_sec.append(float(after_ins_start))
 
             subclip_sec.insert(0, 0)
             subclip_sec.append(' ')
