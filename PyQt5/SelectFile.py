@@ -106,11 +106,10 @@ class ListViewDemo(QWidget):
         self.buttonClip.clicked.connect(self.VideoEdit)
         layout.addWidget(self.buttonClip)
 
-
-        self.buttonClip = QPushButton('Generate Subtitle')
-        self.buttonClip.clicked.connect(self.GenerateSubtitle)
-        self.buttonClip.clicked.connect(self.lable)
-        layout.addWidget(self.buttonClip)
+        self.buttonSub = QPushButton('Generate Subtitle')
+        self.buttonSub.clicked.connect(self.GenerateSubtitle)
+        self.buttonSub.clicked.connect(self.lable)
+        layout.addWidget(self.buttonSub)
 
         self.statusLabel = QLabel()
         #self.statusLabel.setText("            ")
@@ -127,7 +126,6 @@ class ListViewDemo(QWidget):
         self.workThread = WorkThread()
 
         self.workThread.timer.connect(self.countTime)
-        self.workThread.end.connect(self.end)
         self.setLayout(layout)
 
     def countTime(self):
@@ -135,10 +133,6 @@ class ListViewDemo(QWidget):
         sec += 1
         self.statusLabel.setText(str(sec))
         self.progressBar.setValue(sec)
-
-    def end(self):
-        QMessageBox.information(self,'Message','ENDDDDD',QMessageBox.Ok)
-        self.statusLabel.setText('ENDDDDD')
 
     def work(self):
         self.workThread.start() 
@@ -167,6 +161,7 @@ class ListViewDemo(QWidget):
         row = self.listModle.rowCount()
         if row == 1:
             self.statusLabel.setText('影片製作中...')
+            QMessageBox.information(self,'Message','幫你製作影片',QMessageBox.Ok)
             print('影片製作中...')
         if row == 0:
             QMessageBox.information(self,'Message','請選擇影片',QMessageBox.Ok)
@@ -309,6 +304,7 @@ class ListViewDemo(QWidget):
             final_clip = concatenate_videoclips(clips)
             final_clip.write_videofile(outfile)
             final_clip.close()
+            self.statusLabel.setText('影片剪接完成')
 
 
     
