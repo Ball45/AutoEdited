@@ -309,6 +309,7 @@ class ListViewDemo(QWidget):
             final_clip = concatenate_videoclips(clips)
             final_clip.write_videofile(outfile)
             final_clip.close()
+            self.statusLabel.setText('影片剪接完成')
 
 
     
