@@ -19,6 +19,7 @@ img = librosa.display.specshow(mfccs, x_axis='time', ax=ax)
 fig.colorbar(img, ax=ax)
 ax.set(title='MFCC')
 
+print()
 plt.show()
 
 m_slaney = librosa.feature.mfcc(y=y, sr=sr, dct_type=2)
