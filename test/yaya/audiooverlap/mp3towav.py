@@ -5,18 +5,26 @@ import matplotlib.pyplot as plt
 import librosa.display
 
 # import cv2
+# from scipy.ndimage.morphology import binary_closing
 
 
 audio_path = 'media\\2021-08-27.wav'
-x , sr = librosa.load(audio_path, sr=1000)
-X = librosa.stft(x)
-Xdb = librosa.amplitude_to_db(abs(X))
+
+y , sr = librosa.load(audio_path, sr=22200)
+# mfccs = librosa.feature.mfcc(y=y, sr=sr, n_mfcc=40)
+
+Y = librosa.stft(y)
+Xdb = librosa.amplitude_to_db(abs(Y))
 plt.figure(figsize=(14, 5))
 librosa.display.specshow(Xdb, sr=sr, x_axis='time', y_axis='hz')
 plt.colorbar()
 
-plt.figure(figsize=(14, 5))
-librosa.display.waveplot(x, sr=sr)
+# ret, img = source.read()
+# gray = cv2.cvtColor(plt.colorbar(), cv2.COLOR_BGR2GRAY) 
+
+
+# plt.figure(figsize=(14, 5))
+librosa.display.waveplot(y, sr=sr)
 plt.show() #才有圖片
 
 
