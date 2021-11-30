@@ -5,6 +5,7 @@ from pydub import AudioSegment
 import speech_recognition as sr
 from moviepy.editor import *
 import cv2 as cv
+import subprocess
 
 # mp4 轉成 wav -----------------------------
 #inputfile = "media/tainanvlog.mp4"
@@ -151,4 +152,10 @@ print ('sub: ', clips)
 final_clip = concatenate_videoclips(clips)
 final_clip.write_videofile(outfile)
 final_clip.close()
+
+
+vlc = "/Applications/VLC.app/Contents/MacOS/VLC"
+print(outfile) #"media/tetest_out.mp4"
+p1 =subprocess.run ([''+vlc+'', ''+outfile+'',  'vlc://quit'])
+print(p1)
 

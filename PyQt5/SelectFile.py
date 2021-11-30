@@ -10,6 +10,7 @@ import speech_recognition as sr
 from moviepy.editor import *
 from moviepy import editor
 import cv2 as cv
+import subprocess
 
 class Subtitle:
     def __init__(self, time_start, time_end, string=' '):
@@ -168,6 +169,8 @@ class ListViewDemo(QWidget):
             QMessageBox.information(self,'Message','請選擇影片',QMessageBox.Ok)
             #self.statusLabel.setText('選擇影片')
 
+    
+
     def VideoEdit(self):
         # mp4 轉成 wav -----------------------------
         #inputfile = "media/tainanvlog.mp4"
@@ -318,6 +321,9 @@ class ListViewDemo(QWidget):
             final_clip.write_videofile(outfile)
             final_clip.close()
             self.statusLabel.setText('影片剪接完成')
+            vlc = "/Applications/VLC.app/Contents/MacOS/VLC"
+            p1 =subprocess.run ([''+vlc+'', ''+outfile+'',  'vlc://quit'])
+            print(p1)
 
 
     
