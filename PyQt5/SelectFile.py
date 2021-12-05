@@ -47,6 +47,7 @@ class Subtitle:
 class ListViewDemo(QWidget):
     def __init__(self, parent = None):
         super(ListViewDemo, self).__init__(parent)
+        self.setAttribute(Qt.WA_InputMethodEnabled)
         self.setWindowTitle('智慧影音接軌')
         self.resize(450,500)
         self.initUI()
@@ -518,7 +519,7 @@ class Gen_subtitle_popup(QWidget):
 
 if __name__ == "__main__" :
     app = QApplication(sys.argv)
-    # app.setWindowIcon(QIcon('./resources/firefox-icon-02.png'))
+    app.setWindowIcon(QIcon('./resources/firefox-icon-02.png'))
     win = ListViewDemo()
     win.show()
     sys.exit(app.exec_())
