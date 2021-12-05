@@ -247,12 +247,10 @@ class ListViewDemo(QWidget):
     def VideoEdit(self, progress_callback):
         # mp4 轉成 wav -----------------------------
         #inputfile = "media/tainanvlog.mp4"
-        row = self.listModel.rowCount()
-        print(row)
-        for i in range(row):   
-            
+        rowCount = self.listModel.rowCount()
+        for row in range(rowCount):   
             self.statusLabel.setText('影片')
-            source_file = self.listModel.stringList()[i]
+            source_file = self.listModel.stringList()[row]
             slash_pos = source_file.rfind('/')
             dot_pos = source_file.rfind('.')
             source_path, source_name, source_format = source_file[:slash_pos+1], source_file[slash_pos+1:dot_pos], source_file[dot_pos:]
@@ -343,7 +341,7 @@ class ListViewDemo(QWidget):
             print('ins:',ins_loca)
 
                                     
-        # 轉灰階--------------------------------------
+            # 轉灰階--------------------------------------
             for i in range(0,len(ins_loca)-1,2):
                 grayclip = VideoFileClip(source_file).subclip(round(ins_loca[i],2),round(ins_loca[i+1],2))
                 gray_scalar = []
@@ -394,10 +392,8 @@ class ListViewDemo(QWidget):
             final_clip.write_videofile(outfile)
             final_clip.close()
 
-            # for i in self.listModel.rowCount():
-            #     if self.listview.currentIndex() == self.listModel.index(i):
-            #         index = self.listModel.index(row,0)  # 獲得數據模型的索引
-            self.listModel.setData(self.listview.currentIndex(), outfile) 
+            index = self.listModel.index(row, 0)
+            self.listModel.setData(index, outfile) 
             self.statusLabel.setText('\nResult: File exported done')
             '''
             vlc = "/Applications/VLC.app/Contents/MacOS/VLC"
@@ -589,23 +585,6 @@ class Gen_subtitle_popup(QDialog):
         if not os.path.exists(src_path + src_name + '.wav'):
             os.system("ffmpeg -i "+srcfile+" "+src_path + src_name + '.wav')
 
-        def audioToText(audiofile):
-            recognizer = sr.Recognizer()
-            with sr.AudioFile(audiofile) as src:
-                audio_data = recognizer.record(src)
-                try:
-                    text = recognizer.recognize_google(audio_data, language= 'zh-TW')
-                    return text
-                except sr.UnknownValueError:
-                    print("Google Speech Recognition could not understand audio")
-                except sr.RequestError as e:
-                    print("Could not request results from google Speech Recognition service; {0}".format(e))
-                except IOError as e:
-                    print("IOError; {0}".format(e))
-
-                return ' '
-
-
         audiofile = src_path + src_name+'.wav'
         audio_regions = auditok.split(
             audiofile,
@@ -620,7 +599,7 @@ class Gen_subtitle_popup(QDialog):
             print("Region {i}: {r.meta.start:.3f}s -- {r.meta.end:.3f}s".format(i=i, r=r))
             filename = r.save(src_path + "region_{meta.start:.3f}-{meta.end:.3f}.wav")
             start, end = "{r.meta.start:.3f}".format(r=r), "{r.meta.end:.3f}".format(r=r)
-            text = audioToText(filename)
+            text = self.audioToText(filename)
             subtitle_list.append(Subtitle(start, end, text))
 
         i = 0
@@ -640,6 +619,22 @@ class Gen_subtitle_popup(QDialog):
             print()
 
         return subtitle_list
+
+    def audioToText(self, audiofile):
+        recognizer = sr.Recognizer()
+        with sr.AudioFile(audiofile) as src:
+            audio_data = recognizer.record(src)
+            try:
+                text = recognizer.recognize_google(audio_data, language= 'zh-TW')
+                return text
+            except sr.UnknownValueError:
+                print("Google Speech Recognition could not understand audio")
+            except sr.RequestError as e:
+                print("Could not request results from google Speech Recognition service; {0}".format(e))
+            except IOError as e:
+                print("IOError; {0}".format(e))
+
+            return ' '
 
     def Process_gen_subtitle(self):
         setui_wkr = Worker(self.SetUI)
