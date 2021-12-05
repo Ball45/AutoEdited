@@ -1,15 +1,10 @@
-import sys
+import os, time, cv2, sys, auditok
 from PyQt5.QtCore import *
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
-import os
 import numpy as np
-import auditok
-from pydub import AudioSegment
 import speech_recognition as sr
 from moviepy.editor import *
-from moviepy import editor
-import cv2 as cv
 import subprocess
 
 class Subtitle:
@@ -44,7 +39,6 @@ class Subtitle:
         rs = int(s1) + dur
         
         return str(rh).zfill(2) + ':' + str(rm).zfill(2) + ':' + str(rs).zfill(2) + ',' + '000'
-
 
 sec = 0
 
@@ -82,7 +76,6 @@ class ListViewDemo(QWidget):
 
 
         self.buttonRemoveAll = QPushButton('Empty List')
-
         self.buttonRemoveAll.clicked.connect(self.DelListItem)
         layout.addWidget(self.buttonRemoveAll)
 
@@ -94,11 +87,12 @@ class ListViewDemo(QWidget):
 
         # 建立選取影片列表
         self.listview = QListView()       
-        self.listModle = QStringListModel() #建立一個空的模型
+        self.listModel = QStringListModel()
         #self.list = ["列表項1", "列表項2", "列表項3"]
          #將數據放到空的模型內
-        #self.listModle.setStringList(self.list)
-        self.listview.setModel(self.listModle)
+        #self.listModel.setStringList(self.list)
+        self.listview.setModel(self.listModel)
+        self.listview.setEditTriggers(QAbstractItemView.NoEditTriggers)
         layout.addWidget(self.listview)
 
         # 選擇語言
@@ -123,7 +117,7 @@ class ListViewDemo(QWidget):
         layout.addWidget(self.bnt2bar)
 
         self.statusLabel = QLabel()
-        #self.statusLabel.setText("            ")
+        self.statusLabel.setText("\nResult: None")
 
         self.statusbar = QStatusBar(self)
         layout.addWidget(self.statusbar)
@@ -134,8 +128,17 @@ class ListViewDemo(QWidget):
         self.statusbar.addWidget(self.statusLabel, stretch=8)
         #self.statusbar.addPermanentWidget(self.progressBar, stretch=10)
         
-        self.workThread = WorkThread()
+        # self.rst_list = QListView()       
+        # self.rst_model = QStringListModel()
+        # self.rst_list.setModel(self.rst_model)
+        # self.rst_list.setFixedHeight(100)
+        # layout.addWidget(self.rst_list)
 
+        # resulttext = QPlainTextEdit()
+        # resulttext.setReadOnly(True)
+        # layout.addWidget(resulttext)
+
+        self.workThread = WorkThread()
         self.workThread.timer.connect(self.countTime)
         self.setLayout(layout)
 
@@ -152,63 +155,66 @@ class ListViewDemo(QWidget):
     def LoadPath(self):
         fname,_ = QFileDialog.getOpenFileName(self, '打開文件', '.', '文件(*.MOV *.mp4)')
         if len(fname) != 0 :
-            row = self.listModle.rowCount()  # 獲得最後一行的行數       
-            self.listModle.insertRow(row)  # 數據模型添加行
-            index = self.listModle.index(row,0)  # 獲得數據模型的索引
-            self.listModle.setData(index,fname) 
-        print(self.listModle.stringList())
+            row = self.listModel.rowCount()  # 獲得最後一行的行數       
+            self.listModel.insertRow(row)  # 數據模型添加行
+            index = self.listModel.index(row,0)  # 獲得數據模型的索引
+            self.listModel.setData(index,fname) 
+            self.listview.setCurrentIndex(self.listModel.index(0,0))
+            self.buttonClip.setEnabled(True)
+        print(self.listModel.stringList())
             
     def RemovePath(self):
         selected  = self.listview.selectedIndexes() # 根據所有獲取item
         for i in selected:
-            self.listModle.removeRow(i.row())
+            self.listModel.removeRow(i.row())
     
     def DelListItem(self):
-        row1 = self.listModle.rowCount()
+        row1 = self.listModel.rowCount()
         for i in range(row1):
-            self.listModle.removeRow(self.listview.modelColumn())
+            self.listModel.removeRow(self.listview.modelColumn())
 
     def lable(self):
-        row = self.listModle.rowCount()
-        if row == 1:
-            self.statusLabel.setText('影片製作中...')
-            QMessageBox.information(self,'Message','幫你製作影片',QMessageBox.Ok)
+        row = self.listModel.rowCount()
+        if row == 0:
+            QMessageBox.information(self,'Message','Please selected file first', QMessageBox.Ok)
+            #self.statusLabel.setText('選擇影片')
+        elif row == 1:
+            self.statusLabel.setText('\nResult: processing your file...')
+            QMessageBox.information(self,'Message','Your file is being processed',QMessageBox.Ok)
             self.buttonClip.setEnabled(False)
             print('影片製作中...')
-        if row == 0:
-            QMessageBox.information(self,'Message','請選擇影片',QMessageBox.Ok)
-            #self.statusLabel.setText('選擇影片')
-
-    
+        else:
+            pass # This is bug XD
+        
 
     def VideoEdit(self):
         # mp4 轉成 wav -----------------------------
         #inputfile = "media/tainanvlog.mp4"
-        row = self.listModle.rowCount()
+        row = self.listModel.rowCount()
         print(row)
         for i in range(row):   
             
             self.statusLabel.setText('影片')
-            source_file = self.listModle.stringList()[i]
+            source_file = self.listModel.stringList()[i]
             slash_pos = source_file.rfind('/')
             dot_pos = source_file.rfind('.')
             source_path, source_name, source_format = source_file[:slash_pos+1], source_file[slash_pos+1:dot_pos], source_file[dot_pos:]
             wavfile = source_path + source_name + '.wav'     # 執行完刪除 *wav
-            outfile = source_path + source_name + '_out.mp4' # 把檔案存在自己想要的地方
+            outfile = source_path + source_name + '_edited.mp4' # 把檔案存在自己想要的地方
             
 
             if not os.path.exists(wavfile):
                 os.system("ffmpeg -i "+source_file+" "+source_path + source_name + '.wav')
 
             # 找出fps---------------------------------------
-            clip = cv.VideoCapture(source_file)
-            fps = clip.get(cv.CAP_PROP_FPS)
+            clip = cv2.VideoCapture(source_file)
+            fps = clip.get(cv2.CAP_PROP_FPS)
             fps = round(fps,)       
             clip.release()
 
             # 測試靜音 ----------------------------------
             # split returns a generator of AudioRegion objects
-            sound = AudioSegment.from_file(wavfile, format="wav") 
+            # sound = AudioSegment.from_file(wavfile, format="wav") 
             audio_regions = auditok.split(
                 wavfile,
                 min_dur=0.2,         # minimum duration of a valid audio event in seconds
@@ -285,10 +291,10 @@ class ListViewDemo(QWidget):
                 grayclip = VideoFileClip(source_file).subclip(round(ins_loca[i],2),round(ins_loca[i+1],2))
                 gray_scalar = []
                 for frames in grayclip.iter_frames():
-                    gray = cv.cvtColor(frames, cv.COLOR_BGR2GRAY)
-                    #cv.imshow("gray", gray) #播放灰階影片
+                    gray = cv2.cvtColor(frames, cv2.COLOR_BGR2GRAY)
+                    #cv2.imshow("gray", gray) #播放灰階影片
                     gray_scalar.append(gray)
-                    key = cv.waitKey(1)
+                    key = cv2.waitKey(1)
                     if key == ord("q"):
                         break;
                 print('轉灰階成功clip :', round(before_ins_start,2),'s - ', round(after_ins_start,2),'s ')        
@@ -330,21 +336,35 @@ class ListViewDemo(QWidget):
             final_clip = concatenate_videoclips(clips)
             final_clip.write_videofile(outfile)
             final_clip.close()
-            self.statusLabel.setText('影片剪接完成')
+
+            # for i in self.listModel.rowCount():
+            #     if self.listview.currentIndex() == self.listModel.index(i):
+            #         index = self.listModel.index(row,0)  # 獲得數據模型的索引
+            self.listModel.setData(self.listview.currentIndex(), outfile) 
+            self.statusLabel.setText('\nResult: File exported done')
+            '''
             vlc = "/Applications/VLC.app/Contents/MacOS/VLC"
             p1 =subprocess.run ([''+vlc+'', ''+outfile+'',  'vlc://quit'])
             print(p1)
 
             ListViewDemo.DelListItem(self)
             self.buttonClip.setEnabled(True)
-
-
+            '''
     def Gen_subtitle_popup(self):
-        self.gen_subtitle_popup = Gen_subtitle_popup(self.listModle.stringList())
-        self.gen_subtitle_popup.show()
+        if self.listModel.rowCount() <= 0:
+            QMessageBox.information(self,'Message','Please selected file first', QMessageBox.Ok)
+            return 
+
+        popup = Gen_subtitle_popup(self.listModel.stringList())
+        try:
+            rtn_val = popup.exec_()
+        except:
+            rtn_val = 1
+        
+        print(rtn_val)
             
 
-class Gen_subtitle_popup(QWidget):
+class Gen_subtitle_popup(QDialog):
     def __init__(self, src_list):
         super().__init__()
         self.src_list = src_list
@@ -353,6 +373,7 @@ class Gen_subtitle_popup(QWidget):
         self.src_cur_path, self.src_cur_name, self.src_cur_format = src_list[0][:slash_pos+1], src_list[0][slash_pos+1:dot_pos], src_list[0][dot_pos:]
         self.setWindowTitle('Generate Subtitle')
         self.resize(700, 600)
+        # self.rst_list = []
         self.initUI()
 
 
@@ -418,15 +439,31 @@ class Gen_subtitle_popup(QWidget):
         self.AcceptSubtitle_chkbox.stateChanged.connect(lambda:self.ChangeBtnState(self.AcceptSubtitle_chkbox, self.gen_subtitle_btn))
         # Generate butten
         self.gen_subtitle_btn = QPushButton('Generate')
-        self.gen_subtitle_btn.clicked.connect(self.GenerateSubtitle)
+        self.gen_subtitle_btn.clicked.connect(self.Process_gen_subtitle)
         self.gen_subtitle_btn.setDisabled(True)
+
+        self.gen_bar = QStatusBar()
+        self.gen_bar.addPermanentWidget(self.AcceptSubtitle_chkbox, stretch=8)
+        self.gen_bar.addPermanentWidget(self.gen_subtitle_btn, stretch=8)
+
+        self.rst_label = QLabel()
+        self.rst_label.setText('Experted:')
+        self.rst_list = QListView()       
+        self.rst_model = QStringListModel()
+        self.rst_list.setModel(self.rst_model)
+        self.rst_list.setFixedHeight(100)
+        self.rst_list.setEditTriggers(QAbstractItemView.NoEditTriggers)
+        self.rst_bar = QStatusBar()
+        self.rst_bar.addPermanentWidget(self.rst_label, stretch = 1)
+        self.rst_bar.addPermanentWidget(self.rst_list, stretch=16)
+
 
         layout.addWidget(self.src_list_label)
         layout.addWidget(self.src_listview)
         layout.addWidget(self.adjust_label)
         layout.addWidget(self.adjust_table)
-        layout.addWidget(self.AcceptSubtitle_chkbox)
-        layout.addWidget(self.gen_subtitle_btn)
+        layout.addWidget(self.gen_bar)
+        layout.addWidget(self.rst_bar)
         self.setLayout(layout)
 
     def ChangeBtnState(self, chkbox, btn):
@@ -546,38 +583,57 @@ class Gen_subtitle_popup(QWidget):
 
         return subtitle_list
 
-    def export_srt_file(self, subtitle_list, filename, filepath, printMessage=False):
-        f = open(filepath+filename+'.srt', 'w')
+    def Process_gen_subtitle(self):
+        self.SetUI()
+        self.Export_srt_file()
+        self.GenerateSubtitle()
+
+    def Export_srt_file(self):
+        subtitle_list = self.subtitle_dict[str(self.GetCurrentIndex() + 1)]
+
+        f = open(self.src_cur_path+self.src_cur_name+'.srt', 'w')
         for i in range(len(subtitle_list)):
             f.write(str(i) + '\n')
             f.write(subtitle_list[i].time_start + ' --> ' + subtitle_list[i].time_end + '\n')
             f.write(subtitle_list[i].string + '\n')
 
         f.close()
-        if printMessage:
-            print('Done: {} file exported to {}'.format(filename+'.srt', filepath))
+        self.Export_msg_to_mdl(self.rst_model, self.src_cur_path + self.src_cur_name + ".srt")
 
-        return
+    def Export_msg_to_mdl(self, model, msg, withtime = True):
+        row = model.rowCount()
+        model.insertRow(row)
+        index = model.index(row, 0)
+        current_time = time.strftime("%H:%M:%S", time.localtime())
+        if withtime:
+            model.setData(index, "{:<25}{}".format(current_time, msg)) 
+        else:
+            model.setData(index, "{}".format(msg))
+
+    def SetUI(self):
+        self.gen_subtitle_btn.setDisabled(True)
+        self.AcceptSubtitle_chkbox.setChecked(False)
+        self.Export_msg_to_mdl(self.rst_model, "Generating subtitle...")
 
     def GenerateSubtitle(self):
         subtitle_list = self.subtitle_dict[str(self.GetCurrentIndex() + 1)]
-        self.export_srt_file(subtitle_list, self.src_cur_name, self.src_cur_path, True)
-            
         FONT_URL="./resources/GenJyuuGothicL-Medium.ttf"
         def annotate(clip, txt, txt_color='black', fontsize=60):
             """ Writes a text at the bottom of the clip. """
-            txtclip = editor.TextClip(txt, fontsize=fontsize, font=FONT_URL, color=txt_color)
-            cvc = editor.CompositeVideoClip([clip, txtclip.set_pos(('center', 'bottom'))])
+            txtclip = TextClip(txt, fontsize=fontsize, font=FONT_URL, color=txt_color)
+            cvc = CompositeVideoClip([clip, txtclip.set_pos(('center', 'bottom'))])
             return cvc.set_duration(clip.duration)
 
         # bind subtitle file into video stream
-        src_clip = editor.VideoFileClip(self.src_cur_path + self.src_cur_name + self.src_cur_format)
+        src_clip = VideoFileClip(self.src_cur_path + self.src_cur_name + self.src_cur_format)
         annotated_clips = []
         for subtitle in subtitle_list:
             annotated_clips.append(annotate(src_clip.subclip(subtitle.time_start, subtitle.time_end), subtitle.string))
 
-        final_clip = editor.concatenate_videoclips(annotated_clips)
+        final_clip = concatenate_videoclips(annotated_clips)
         final_clip.write_videofile(self.src_cur_path + self.src_cur_name + "_with_subtitle.mp4")
+        self.Export_msg_to_mdl(self.rst_model, self.src_cur_path + self.src_cur_name + "_with_subtitle.mp4")
+        self.Export_msg_to_mdl(self.rst_model, "Done.")
 
 if __name__ == "__main__" :
     app = QApplication(sys.argv)
