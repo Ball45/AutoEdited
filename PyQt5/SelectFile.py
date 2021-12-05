@@ -1,15 +1,16 @@
 import sys
-import os
-import auditok
-import cv2
-import numpy as np
 from PyQt5.QtCore import *
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
+import os
+import numpy as np
+import auditok
+from pydub import AudioSegment
 import speech_recognition as sr
+from moviepy.editor import *
 from moviepy import editor
-# from pydub import AudioSegment
-
+import cv2 as cv
+import subprocess
 
 class Subtitle:
     def __init__(self, time_start, time_end, string=' '):
@@ -44,59 +45,110 @@ class Subtitle:
         
         return str(rh).zfill(2) + ':' + str(rm).zfill(2) + ':' + str(rs).zfill(2) + ',' + '000'
 
+
+sec = 0
+
+class WorkThread(QThread):
+    timer = pyqtSignal() # 每隔一秒發送一次信號
+    end = pyqtSignal()   # 技術完成後發送一次信號
+    def run(self):
+        while True:
+            self.sleep(1) # 休眠一秒
+            if sec == 100:
+                self.end.emit() # 發送end信號
+                break;
+            self.timer.emit()  # 發送timer信號
+
 class ListViewDemo(QWidget):
     def __init__(self, parent = None):
         super(ListViewDemo, self).__init__(parent)
-        self.setAttribute(Qt.WA_InputMethodEnabled)
         self.setWindowTitle('智慧影音接軌')
-        self.resize(450,500)
+        self.resize(600,500)
         self.initUI()
        
-    def initUI(self):        # self.combobox = QComboBox()        # self.combobox = QComboBox()        # self.combobox = QComboBox()
-        # self.combobox.setItemText(3, "Tw")
-        # layout.addWidget(self.combobox)
-        # self.combobox.setItemText(3, "Tw")
-        # layout.addWidget(self.combobox)
-        # self.combobox.setItemText(3, "Tw")
-        # layout.addWidget(self.combobox)
+    def initUI(self):
         layout = QVBoxLayout()
         self.listWidget = QListWidget()
 
+        # 按鈕選擇檔案
         self.buttonOpenFile = QPushButton('Select File')
         self.buttonOpenFile.clicked.connect(self.LoadPath) 
         layout.addWidget(self.buttonOpenFile)
 
+        # 按鈕移除檔案
         self.buttonRemoveFile = QPushButton('Remove File')
         self.buttonRemoveFile.clicked.connect(self.RemovePath)
         layout.addWidget(self.buttonRemoveFile)
 
-        self.buttonRemoveAll = QPushButton('Remove All')
+
+        self.buttonRemoveAll = QPushButton('Empty List')
+
         self.buttonRemoveAll.clicked.connect(self.DelListItem)
         layout.addWidget(self.buttonRemoveAll)
 
-        self.listview = QListView()
-        #建立一個空的模型
-        self.listModle = QStringListModel()
+        #self.bntbar = QStatusBar(self)
+        #self.bntbar.addPermanentWidget(self.buttonOpenFile, stretch=4)
+        #self.bntbar.addPermanentWidget(self.buttonRemoveFile, stretch=4)
+        #self.bntbar.addPermanentWidget(self.buttonRemoveAll, stretch=4)
+        #layout.addWidget(self.bntbar)
+
+        # 建立選取影片列表
+        self.listview = QListView()       
+        self.listModle = QStringListModel() #建立一個空的模型
         #self.list = ["列表項1", "列表項2", "列表項3"]
          #將數據放到空的模型內
         #self.listModle.setStringList(self.list)
         self.listview.setModel(self.listModle)
         layout.addWidget(self.listview)
 
-        # self.combobox = QComboBox()
-        # self.combobox.setItemText(3, "Tw")
-        # layout.addWidget(self.combobox)
+        # 選擇語言
+        #self.combobox = QComboBox()
+        #self.combobox.setItemText(3, "Tw")
+        #layout.addWidget(self.combobox)
 
+        # 按鈕編輯影片
         self.buttonClip = QPushButton('Edit Video')
+        self.buttonClip.clicked.connect(self.lable)
         self.buttonClip.clicked.connect(self.VideoEdit)
-        layout.addWidget(self.buttonClip)
+        #layout.addWidget(self.buttonClip)
 
-        self.buttonClip = QPushButton('Generate Subtitle')
-        self.buttonClip.clicked.connect(self.Gen_subtitle_popup)
-        layout.addWidget(self.buttonClip)
 
+        self.buttonSub = QPushButton('Generate Subtitle')
+        self.buttonSub.clicked.connect(self.Gen_subtitle_popup)
+        #layout.addWidget(self.buttonSub)
+
+        self.bnt2bar = QStatusBar(self)
+        self.bnt2bar.addPermanentWidget(self.buttonClip, stretch=8)
+        self.bnt2bar.addPermanentWidget(self.buttonSub, stretch=8)
+        layout.addWidget(self.bnt2bar)
+
+        self.statusLabel = QLabel()
+        #self.statusLabel.setText("            ")
+
+        self.statusbar = QStatusBar(self)
+        layout.addWidget(self.statusbar)
+
+        self.progressBar = QProgressBar()
+        self.progressBar.setRange(0,100)
+        #layout.addWidget(self.progressBar)
+        self.statusbar.addWidget(self.statusLabel, stretch=8)
+        #self.statusbar.addPermanentWidget(self.progressBar, stretch=10)
+        
+        self.workThread = WorkThread()
+
+        self.workThread.timer.connect(self.countTime)
         self.setLayout(layout)
-    
+
+    def countTime(self):
+        global sec
+        sec += 1
+        self.statusLabel.setText(str(sec))
+        self.progressBar.setValue(sec)
+
+    def work(self):
+        self.workThread.start() 
+      
+
     def LoadPath(self):
         fname,_ = QFileDialog.getOpenFileName(self, '打開文件', '.', '文件(*.MOV *.mp4)')
         if len(fname) != 0 :
@@ -116,41 +168,47 @@ class ListViewDemo(QWidget):
         for i in range(row1):
             self.listModle.removeRow(self.listview.modelColumn())
 
+    def lable(self):
+        row = self.listModle.rowCount()
+        if row == 1:
+            self.statusLabel.setText('影片製作中...')
+            QMessageBox.information(self,'Message','幫你製作影片',QMessageBox.Ok)
+            self.buttonClip.setEnabled(False)
+            print('影片製作中...')
+        if row == 0:
+            QMessageBox.information(self,'Message','請選擇影片',QMessageBox.Ok)
+            #self.statusLabel.setText('選擇影片')
+
+    
+
     def VideoEdit(self):
         # mp4 轉成 wav -----------------------------
         #inputfile = "media/tainanvlog.mp4"
         row = self.listModle.rowCount()
-        for i in range(row):
+        print(row)
+        for i in range(row):   
+            
+            self.statusLabel.setText('影片')
             source_file = self.listModle.stringList()[i]
             slash_pos = source_file.rfind('/')
             dot_pos = source_file.rfind('.')
             source_path, source_name, source_format = source_file[:slash_pos+1], source_file[slash_pos+1:dot_pos], source_file[dot_pos:]
-            outfile = source_path + source_name + '_edited.mp4'
-            wavfile = source_path + source_name + '.wav'
+            wavfile = source_path + source_name + '.wav'     # 執行完刪除 *wav
+            outfile = source_path + source_name + '_out.mp4' # 把檔案存在自己想要的地方
+            
 
             if not os.path.exists(wavfile):
                 os.system("ffmpeg -i "+source_file+" "+source_path + source_name + '.wav')
 
-            #轉灰階--------------------------------------
-            clip = editor.VideoFileClip(source_file)
-            gray_scalar = []
-            for frames in clip.iter_frames():
-                gray = cv2.cvtColor(frames, cv2.COLOR_BGR2GRAY)
-                # cv2.imshow("gray", gray) #播放灰階影片
-                gray_scalar.append(gray)
-                key = cv2.waitKey(1)
-                if key == ord("q"):
-                    break
-
             # 找出fps---------------------------------------
-            clip = cv2.VideoCapture(source_file)
-            fps = clip.get(cv2.CAP_PROP_FPS)
+            clip = cv.VideoCapture(source_file)
+            fps = clip.get(cv.CAP_PROP_FPS)
             fps = round(fps,)       
             clip.release()
 
             # 測試靜音 ----------------------------------
             # split returns a generator of AudioRegion objects
-            # sound = AudioSegment.from_file(wavfile, format="wav") 
+            sound = AudioSegment.from_file(wavfile, format="wav") 
             audio_regions = auditok.split(
                 wavfile,
                 min_dur=0.2,         # minimum duration of a valid audio event in seconds
@@ -164,7 +222,8 @@ class ListViewDemo(QWidget):
             silence_duration = np.zeros(1000)
             speech_duration = np.zeros(1000)
             num = 0
-            cut=1
+            ins_loca=[]
+            subclip_sec=[]
 
             for i, r in enumerate(audio_regions):
                 record_start[i] = r.meta.start
@@ -172,10 +231,14 @@ class ListViewDemo(QWidget):
                 num = num+1
 
             for j in range(num-1):
+                # evaluate silence section length
                 silence_duration[j] = record_start[j+1] - record_end[j]
-                print("Silence ", j, " :", round(record_end[j], 3), 's', 'to', round(record_start[j+1], 3), 's, Duration : ', silence_duration[j])
-                
+                print("Silence ", j, " :", round(record_end[j], 3), 's', 'to', round(record_start[j+1], 3), 's, Duration : ', round(silence_duration[j],3))
+
+                # if there are two continuous silence sections >2.5 
                 if silence_duration[j-1] > 1.4 and silence_duration[j] > 1.4 and speech_duration[j] < 5.0:
+                    #print("instruction : ", round(record_start[j], 3), 's', 'to', round(record_end[j], 3), 's')
+
             # 辨識是否為語音指令“剪接” ---------------------------
                     r = sr.Recognizer()
                     instruction = sr.AudioFile(wavfile)
@@ -184,52 +247,97 @@ class ListViewDemo(QWidget):
                     try:
                         ins = r.recognize_google(audio_data=audio, key=None,language="zh-TW", show_all=True)
                         if "剪接" in str(ins):
-                            print("Instruction : 剪接")                
-            # 偵測重複 ----------------------------------
-                            min = 100000000000
-                            
+                            print("instruction ", round(record_start[j], 3), 's to', round(record_end[j], 3), 's'," : 剪接")      
+
                             # 抓影片前5秒進行辨識
                             before_ins_end = int(record_end[j-1])      #指令前的結束時間
                             if (before_ins_end-5) < 0 :
                                 before_ins_start=0
+                                sec = float(before_ins_end)
                             else :
                                 before_ins_start = before_ins_end-5    #指令前的起始時間
+                                sec = 5
                             
                             after_ins_start = float(record_start[j+1]) # 指令後的起始時間
-                            
-                            for i in range(5*fps):
-                                before_ins = gray_scalar[before_ins_start*fps+i]
-                                after_ins = gray_scalar[round(after_ins_start*fps)]
-                                
-                                d = (before_ins-after_ins)**2
-                                
-                                if min > d.sum():
-                                    cutpoint = (before_ins_start*fps+i)/fps 
-                                    min = d.sum()
-                                #print('t : ', round(before_ins_start*fps+i+j, 1)/fps,' ', d.sum())          
-                            #輸出最相近
-                            print(cutpoint, min)
-            # 剪接 -------------------------------------
-                            if cut != 1 :
-                                file = final_clip
-                            else :
-                                file = source_file
-                                cut+=1
-
-                            clip1 = editor.VideoFileClip(file).subclip(0, cutpoint)
-                            clip2 = editor.VideoFileClip(file).subclip(after_ins_start, )
-                            final_clip = editor.concatenate_videoclips([clip1, clip2])
+                            print('往前抓＿秒進行辨識:',sec)
+                                    
+                            ins_loca.append(float(before_ins_start))
+                            ins_loca.append(float(after_ins_start))
+                        
                         else:
                             print(ins,'pass')
                             pass
-
+                    
                     except sr.UnknownValueError:   
                         ins = "無法翻譯"
                     except sr.RequestError as e:
                         ins = "無法翻譯{0}".format(e)
+                            
+            for i in range(1,len(ins_loca)-1,2):
+                if ins[i]> ins[i+1]:
+                    del ins[i]
+                    del ins[i+1]
+            print('ins:',ins_loca)
 
+                                    
+        # 轉灰階--------------------------------------
+            for i in range(0,len(ins_loca)-1,2):
+                grayclip = VideoFileClip(source_file).subclip(round(ins_loca[i],2),round(ins_loca[i+1],2))
+                gray_scalar = []
+                for frames in grayclip.iter_frames():
+                    gray = cv.cvtColor(frames, cv.COLOR_BGR2GRAY)
+                    #cv.imshow("gray", gray) #播放灰階影片
+                    gray_scalar.append(gray)
+                    key = cv.waitKey(1)
+                    if key == ord("q"):
+                        break;
+                print('轉灰階成功clip :', round(before_ins_start,2),'s - ', round(after_ins_start,2),'s ')        
+                #print(len(gray_scalar))
+            
+            # 偵測重複 ----------------------------------
+                min = 100000000000
+                
+                for i in range(sec*fps):
+                    before_ins = gray_scalar[i]
+                    after_ins = gray_scalar[len(gray_scalar)-1]
+                    
+                    d = (before_ins-after_ins)**2
+                    
+                    if min > d.sum():
+                        cutpoint = (before_ins_start*fps+i)/fps 
+                        min = d.sum()
+                    #print('t : ', round(before_ins_start*fps+i+j, 1)/fps,' ', d.sum())          
+                #輸出最相近
+                print(cutpoint, min)
+                subclip_sec.append(float(cutpoint))
+                subclip_sec.append(float(after_ins_start))
+
+            subclip_sec.insert(0, 0)
+            subclip_sec.append(' ')
+            print('subclip[(from_t, to_t)]:',subclip_sec)
+
+            # 剪接 -------------------------------------
+            clips = []
+            for i in range(0,len(subclip_sec),2):
+                if i == (len(subclip_sec)-2):
+                    clip = VideoFileClip(source_file).subclip(subclip_sec[i], )
+                    #print("subclip(",subclip_sec[i],", )")  
+                else:
+                    clip = VideoFileClip(source_file).subclip(subclip_sec[i], subclip_sec[i+1])
+                    #print("subclip(",subclip_sec[i],", ",subclip_sec[i+1],")")  
+                clips.append(clip)
+            print ('sub: ', clips)
+            final_clip = concatenate_videoclips(clips)
             final_clip.write_videofile(outfile)
             final_clip.close()
+            self.statusLabel.setText('影片剪接完成')
+            vlc = "/Applications/VLC.app/Contents/MacOS/VLC"
+            p1 =subprocess.run ([''+vlc+'', ''+outfile+'',  'vlc://quit'])
+            print(p1)
+
+            ListViewDemo.DelListItem(self)
+            self.buttonClip.setEnabled(True)
+
 
     def Gen_subtitle_popup(self):
         self.gen_subtitle_popup = Gen_subtitle_popup(self.listModle.stringList())
