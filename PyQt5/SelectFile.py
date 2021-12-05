@@ -1,4 +1,4 @@
-import os, time, cv2, sys, auditok
+import os, time, cv2, sys, auditok, traceback
 from PyQt5.QtCore import *
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
@@ -40,6 +40,57 @@ class Subtitle:
         
         return str(rh).zfill(2) + ':' + str(rm).zfill(2) + ':' + str(rs).zfill(2) + ',' + '000'
 
+class WorkerSignals(QObject):
+    '''
+    Defines the signals available from a running worker thread.
+
+    Supported signals are:
+
+    finished
+        No data
+
+    error
+        tuple (exctype, value, traceback.format_exc() )
+
+    result
+        object data returned from processing, anything
+
+    '''
+    finished = pyqtSignal()
+    error = pyqtSignal(tuple)
+    result = pyqtSignal(object)
+    progress = pyqtSignal(int)
+
+class Worker(QRunnable):
+    def __init__(self, fn, *args, **kwargs):
+        super(Worker, self).__init__()
+        self.fn = fn
+        self.args = args
+        self.kwargs = kwargs
+        self.signals = WorkerSignals()
+
+        # Add the callback to our kwargs
+        self.kwargs['progress_callback'] = self
+
+    @pyqtSlot()
+    def run(self):
+        '''
+        Initialise the runner function with passed args, kwargs.
+        '''
+
+        # Retrieve args/kwargs here; and fire processing using them
+        try:
+            result = self.fn(*self.args, **self.kwargs)
+        except:
+            traceback.print_exc()
+            exctype, value = sys.exc_info()[:2]
+            self.signals.error.emit((exctype, value, traceback.format_exc()))
+        else:
+            self.signals.result.emit(result)  # Return the result of the processing
+        finally:
+            self.signals.finished.emit()  # Done
+    
+
 sec = 0
 
 class WorkThread(QThread):
@@ -56,6 +107,7 @@ class WorkThread(QThread):
 class ListViewDemo(QWidget):
     def __init__(self, parent = None):
         super(ListViewDemo, self).__init__(parent)
+        self.thd_pool = QThreadPool()
         self.setWindowTitle('智慧影音接軌')
         self.resize(600,500)
         self.initUI()
@@ -102,8 +154,7 @@ class ListViewDemo(QWidget):
 
         # 按鈕編輯影片
         self.buttonClip = QPushButton('Edit Video')
-        self.buttonClip.clicked.connect(self.lable)
-        self.buttonClip.clicked.connect(self.VideoEdit)
+        self.buttonClip.clicked.connect(self.VideoEdit_launcher)
         #layout.addWidget(self.buttonClip)
 
 
@@ -173,7 +224,7 @@ class ListViewDemo(QWidget):
         for i in range(row1):
             self.listModel.removeRow(self.listview.modelColumn())
 
-    def lable(self):
+    def SetLabel(self, progress_callback):
         row = self.listModel.rowCount()
         if row == 0:
             QMessageBox.information(self,'Message','Please selected file first', QMessageBox.Ok)
@@ -186,8 +237,14 @@ class ListViewDemo(QWidget):
         else:
             pass # This is bug XD
         
+    def VideoEdit_launcher(self):
+        video_edit_wkr = Worker(self.VideoEdit)
+        self.thd_pool.start(video_edit_wkr)
 
-    def VideoEdit(self):
+        set_label_wkr = Worker(self.SetLabel)
+        self.thd_pool.start(set_label_wkr)
+
+    def VideoEdit(self, progress_callback):
         # mp4 轉成 wav -----------------------------
         #inputfile = "media/tainanvlog.mp4"
         row = self.listModel.rowCount()
@@ -367,6 +424,7 @@ class ListViewDemo(QWidget):
 class Gen_subtitle_popup(QDialog):
     def __init__(self, src_list):
         super().__init__()
+        self.thd_pool = QThreadPool()
         self.src_list = src_list
         slash_pos = src_list[0].rfind('/')
         dot_pos = src_list[0].rfind('.')
@@ -584,11 +642,16 @@ class Gen_subtitle_popup(QDialog):
         return subtitle_list
 
     def Process_gen_subtitle(self):
-        self.SetUI()
-        self.Export_srt_file()
-        self.GenerateSubtitle()
+        setui_wkr = Worker(self.SetUI)
+        self.thd_pool.start(setui_wkr)
 
-    def Export_srt_file(self):
+        eprt_srt_wkr = Worker(self.Export_srt_file)
+        self.thd_pool.start(eprt_srt_wkr)
+
+        gen_subtitle_wkr = Worker(self.GenerateSubtitle)
+        self.thd_pool.start(gen_subtitle_wkr)
+
+    def Export_srt_file(self, progress_callback):
         subtitle_list = self.subtitle_dict[str(self.GetCurrentIndex() + 1)]
 
         f = open(self.src_cur_path+self.src_cur_name+'.srt', 'w')
@@ -606,16 +669,16 @@ class Gen_subtitle_popup(QDialog):
         index = model.index(row, 0)
         current_time = time.strftime("%H:%M:%S", time.localtime())
         if withtime:
-            model.setData(index, "{:<25}{}".format(current_time, msg)) 
+            model.setData(index, "{:<12}{}".format(current_time, msg)) 
         else:
             model.setData(index, "{}".format(msg))
 
-    def SetUI(self):
+    def SetUI(self, progress_callback):
         self.gen_subtitle_btn.setDisabled(True)
         self.AcceptSubtitle_chkbox.setChecked(False)
         self.Export_msg_to_mdl(self.rst_model, "Generating subtitle...")
 
-    def GenerateSubtitle(self):
+    def GenerateSubtitle(self, progress_callback):
         subtitle_list = self.subtitle_dict[str(self.GetCurrentIndex() + 1)]
         FONT_URL="./resources/GenJyuuGothicL-Medium.ttf"
         def annotate(clip, txt, txt_color='black', fontsize=60):
