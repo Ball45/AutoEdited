@@ -125,13 +125,11 @@ class ListViewDemo(QWidget):
             slash_pos = source_file.rfind('/')
             dot_pos = source_file.rfind('.')
             source_path, source_name, source_format = source_file[:slash_pos+1], source_file[slash_pos+1:dot_pos], source_file[dot_pos:]
-            outfile = source_path + source_name + '_out.mp4'
-            
+            outfile = source_path + source_name + '_edited.mp4'
             wavfile = source_path + source_name + '.wav'
 
             if not os.path.exists(wavfile):
                 os.system("ffmpeg -i "+source_file+" "+source_path + source_name + '.wav')
-
 
             #轉灰階--------------------------------------
             clip = editor.VideoFileClip(source_file)
@@ -379,8 +377,12 @@ class Gen_subtitle_popup(QWidget):
     def getSubtitle(self, srcfile):
         slash_pos = srcfile.rfind('/')
         dot_pos = srcfile.rfind('.')
-        src_path, src_name, src_format = srcfile[:slash_pos+1] + 'resources/', srcfile[slash_pos+1:dot_pos], srcfile[dot_pos:]
+        src_path, src_name, src_format = srcfile[:slash_pos+1], srcfile[slash_pos+1:dot_pos], srcfile[dot_pos:]
 
+        if not os.path.exists(src_path + 'wav/'):
+            os.mkdir(src_path + 'wav/')
+
+        src_path += 'wav/'
         if not os.path.exists(src_path + src_name + '.wav'):
             os.system("ffmpeg -i "+srcfile+" "+src_path + src_name + '.wav')
 
@@ -434,12 +436,6 @@ class Gen_subtitle_popup(QWidget):
             print(i.string)
             print()
 
-        # if not os.path.exists(src_path + src_name + '.srt'):
-        #     os.system("autosub -S zh-TW -D zh-TW " + src_path + src_name + '.mp4')
-
-        # file = open(src_path + src_name + '.srt') # temp
-        # file_line = file.readlines()
-        # file.close()
         return subtitle_list
 
     def export_srt_file(self, subtitle_list, filename, filepath, printMessage=False):
@@ -456,52 +452,10 @@ class Gen_subtitle_popup(QWidget):
         return
 
     def GenerateSubtitle(self):
-        # for i in range(len(self.src_list)):
-            # source_file = self.src_list[i]
-            # slash_pos = source_file.rfind('/')
-            # dot_pos = source_file.rfind('.')
-            # source_path, source_name, source_format = source_file[:slash_pos+1], source_file[slash_pos+1:dot_pos], source_file[dot_pos:]
-
-            # source_name += '_out'
-            # source_file = source_path+source_name+source_format
-            # source_clip = editor.VideoFileClip(source_file)
-
-            # # read the srt file
-            # subtitle_file = open(source_path + source_name + '.srt')
-            # subtitle_line = subtitle_file.readlines()
-            # subtitle_file.close()
-
-            # subtitle_list = []
-            # for index in range(0, len(subtitle_line), 4):
-            #     string = subtitle_line[index + 2]
-            #     time_start = subtitle_line[index + 1][:12]
-            #     time_end = subtitle_line[index+1][17:29]
-            #     subtitle_list.append(Subtitle(time_start, time_end, string))
-
-            # # handling subtitle go out of screen
-            # for index in range(len(subtitle_list)):
-            #     if 25 < len(subtitle_list[index].string):
-            #         former, latter = subtitle_list[index].split()
-            #         subtitle_list[index] = former
-            #         subtitle_list.insert(index+1, latter)
-
-
-
-            # add clip without subtitle into subtitle_list
         subtitle_list = self.subtitle_dict[str(self.GetCurrentIndex() + 1)]
-        # i = 0
-        # while i < len(subtitle_list) - 1:
-        #     if subtitle_list[i].time_end < subtitle_list[i+1].time_start:
-        #         time_start = subtitle_list[i].time_end
-        #         time_end = subtitle_list[i+1].time_start
-        #         subtitle_list.insert(i+1, Subtitle(time_start, time_end))
-        #         i += 1
-
-        #     i += 1
-
         self.export_srt_file(subtitle_list, self.src_cur_name, self.src_cur_path, True)
             
-        FONT_URL=self.src_cur_path + "./resources/GenJyuuGothicL-Medium.ttf"
+        FONT_URL="./resources/GenJyuuGothicL-Medium.ttf"
         def annotate(clip, txt, txt_color='black', fontsize=60):
             """ Writes a text at the bottom of the clip. """
             txtclip = editor.TextClip(txt, fontsize=fontsize, font=FONT_URL, color=txt_color)
