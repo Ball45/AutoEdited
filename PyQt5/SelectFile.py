@@ -229,14 +229,11 @@ class ListViewDemo(QWidget):
         if row == 0:
             QMessageBox.information(self,'Message','Please selected file first', QMessageBox.Ok)
             #self.statusLabel.setText('選擇影片')
-        elif row == 1:
+        else:
             self.statusLabel.setText('\nResult: processing your file...')
             QMessageBox.information(self,'Message','Your file is being processed',QMessageBox.Ok)
-            self.buttonClip.setEnabled(False)
-            print('影片製作中...')
-        else:
-            pass # This is bug XD
-        
+            self.buttonClip.setDisabled(True)
+                
     def VideoEdit_launcher(self):
         video_edit_wkr = Worker(self.VideoEdit)
         self.thd_pool.start(video_edit_wkr)
