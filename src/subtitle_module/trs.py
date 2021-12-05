@@ -69,6 +69,7 @@ class Subtitle:
     #          str(int(self.time_end[6:8]) + 1).zfill(2) + ",000"
 
 # handling with subtitle file
+'''
 if not os.path.exists(source_path + source_name + '.srt'):
     os.system("autosub -S zh-CN -D zh-CN " + source_file)
 
@@ -115,9 +116,9 @@ def export_srt_file(subtitle_list, filename=source_name+'_new', filepath=source_
 
 export_srt_file(subtitle_list)
 print('Done: New srt file exported')
-
-
 '''
+
+
 # using google speech_recognition to generate subtitle
 import speech_recognition as sr
 import auditok
@@ -146,8 +147,8 @@ def audioToText(audiofile):
             print("IOError; {0}".format(e))
 
         return ' '
-'''
-'''
+
+
 audiofile = source_path+source_name+'.wav'
 audio_regions = auditok.split(
     audiofile,
@@ -172,7 +173,7 @@ for i in segment_list:
     print()
 
 source_clip = editor.VideoFileClip("movie_2.mp4")
-'''
+
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
 def annotate(clip, txt, txt_color='black', fontsize=50, font='Xolonium-Bold'):
