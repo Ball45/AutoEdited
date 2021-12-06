@@ -237,17 +237,16 @@ class ListViewDemo(QWidget):
     def VideoEdit_launcher(self):
         video_edit_wkr = Worker(self.VideoEdit)
         self.thd_pool.start(video_edit_wkr)
-        video_edit_wkr.setAutoDelete(True)
 
         set_label_wkr = Worker(self.SetLabel)
         self.thd_pool.start(set_label_wkr)
-        set_label_wkr.setAutoDelete(True)
 
     def VideoEdit(self, progress_callback):
         # mp4 轉成 wav -----------------------------
         #inputfile = "media/tainanvlog.mp4"
         rowCount = self.listModel.rowCount()
         for row in range(rowCount):   
+            self.statusLabel.setText('\nResult: loading your file...')
             source_file = self.listModel.stringList()[row]
             slash_pos = source_file.rfind('/')
             dot_pos = source_file.rfind('.')
@@ -266,6 +265,7 @@ class ListViewDemo(QWidget):
             clip.release()
 
             # 測試靜音 ----------------------------------
+            self.statusLabel.setText('\nResult: detecting voice instructions...')
             # split returns a generator of AudioRegion objects
             # sound = AudioSegment.from_file(wavfile, format="wav") 
             audio_regions = auditok.split(
@@ -340,6 +340,8 @@ class ListViewDemo(QWidget):
 
                                     
             # 轉灰階--------------------------------------
+            self.statusLabel.setText('\nResult: cropping the video...')
+
             for i in range(0,len(ins_loca)-1,2):
                 grayclip = VideoFileClip(source_file).subclip(round(ins_loca[i],2),round(ins_loca[i+1],2))
                 gray_scalar = []
@@ -398,6 +400,7 @@ class ListViewDemo(QWidget):
             p1 =subprocess.run ([''+vlc+'', ''+outfile+'',  'vlc://quit'])
             print(p1)
 
+            
             ListViewDemo.DelListItem(self)
             self.buttonClip.setEnabled(True)
             '''
@@ -450,13 +453,22 @@ class Gen_subtitle_popup(QDialog):
         self.src_listview.setFixedHeight(20 * len(self.src_list))
         self.src_listview.setCurrentIndex(self.src_listmodel.index(0,0))
         
+
         # prepare subtitle
         self.subtitle_dict = {} 
+        self.subtitle_dict['1'] = self.getSubtitle(self.src_list[0])
+
+        # handling subtitle go out of screen
+        for index in range(len(self.subtitle_dict['1'])):
+            if 25 < len(self.subtitle_dict['1'][index].string):
+                former, latter = self.subtitle_dict['1'][index].split()
+                self.subtitle_dict['1'][index] = former
+                self.subtitle_dict['1'].insert(index+1, latter)
 
         # adjust box
         self.adjust_table = QTableView()
         self.adjust_model_dict = {}
-        self.adjust_model_dict['1'] = QStandardItemModel(0, 3)
+        self.adjust_model_dict['1'] = QStandardItemModel(len(self.subtitle_dict['1']), 3)
         self.adjust_model_dict['1'].setHorizontalHeaderLabels(['Time start', 'Time end', 'Subtitle'])
         self.adjust_table.setModel(self.adjust_model_dict['1'])
         self.SetupSubtitleAndTable_launcher()
@@ -552,7 +564,7 @@ class Gen_subtitle_popup(QDialog):
             print(i.string)
             print()
 
-    def GetSubtitle(self, srcfile, blank=True):
+    def getSubtitle(self, srcfile):
         slash_pos = srcfile.rfind('/')
         dot_pos = srcfile.rfind('.')
         src_path, src_name, src_format = srcfile[:slash_pos+1], srcfile[slash_pos+1:dot_pos], srcfile[dot_pos:]
@@ -591,18 +603,11 @@ class Gen_subtitle_popup(QDialog):
 
             i += 1
 
-        if blank:
-            # handling subtitle go out of screen
-            for index in range(len(subtitle_list)):
-                if 25 < len(subtitle_list[index].string):
-                    former, latter = subtitle_list[index].split()
-                    subtitle_list[index] = former
-                    subtitle_list.insert(index+1, latter)
 
-        # for i in subtitle_list:
-        #     print(i.time_start, i.time_end)
-        #     print(i.string)
-        #     print()
+        for i in subtitle_list:
+            print(i.time_start, i.time_end)
+            print(i.string)
+            print()
 
         return subtitle_list
 
