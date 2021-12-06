@@ -236,9 +236,12 @@ class ListViewDemo(QWidget):
                 
     def VideoEdit_launcher(self):
         video_edit_wkr = Worker(self.VideoEdit)
+        video_edit_wkr.setAutoDelete(True)
         self.thd_pool.start(video_edit_wkr)
+        
 
         set_label_wkr = Worker(self.SetLabel)
+        set_label_wkr.setAutoDelete(True)
         self.thd_pool.start(set_label_wkr)
 
     def VideoEdit(self, progress_callback):
@@ -629,16 +632,16 @@ class Gen_subtitle_popup(QDialog):
 
     def Process_gen_subtitle(self):
         setui_wkr = Worker(self.SetUI)
-        self.thd_pool.start(setui_wkr)
         setui_wkr.setAutoDelete(True)
+        self.thd_pool.start(setui_wkr)
 
         eprt_srt_wkr = Worker(self.Export_srt_file)
-        self.thd_pool.start(eprt_srt_wkr)
         eprt_srt_wkr.setAutoDelete(True)
+        self.thd_pool.start(eprt_srt_wkr)
 
         gen_subtitle_wkr = Worker(self.GenerateSubtitle)
-        self.thd_pool.start(gen_subtitle_wkr)
         gen_subtitle_wkr.setAutoDelete(True)
+        self.thd_pool.start(gen_subtitle_wkr)
 
     def Export_srt_file(self, progress_callback):
         subtitle_list = self.subtitle_dict[str(self.GetCurrentIndex() + 1)]
