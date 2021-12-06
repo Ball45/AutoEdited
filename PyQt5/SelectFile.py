@@ -237,9 +237,11 @@ class ListViewDemo(QWidget):
     def VideoEdit_launcher(self):
         video_edit_wkr = Worker(self.VideoEdit)
         self.thd_pool.start(video_edit_wkr)
+        video_edit_wkr.setAutoDelete(True)
 
         set_label_wkr = Worker(self.SetLabel)
         self.thd_pool.start(set_label_wkr)
+        set_label_wkr.setAutoDelete(True)
 
     def VideoEdit(self, progress_callback):
         # mp4 轉成 wav -----------------------------
