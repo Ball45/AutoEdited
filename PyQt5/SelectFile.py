@@ -64,7 +64,6 @@ class WorkerSignals(QObject):
     result = pyqtSignal(object)
     progress = pyqtSignal(int)
 
-
 class Worker(QRunnable):
     '''
     Worker thread
@@ -145,7 +144,6 @@ class ListViewDemo(QWidget):
         self.buttonRemoveFile.clicked.connect(self.RemovePath)
         layout.addWidget(self.buttonRemoveFile)
 
-
         self.buttonRemoveAll = QPushButton('Empty List')
         self.buttonRemoveAll.clicked.connect(self.DelListItem)
         layout.addWidget(self.buttonRemoveAll)
@@ -174,8 +172,7 @@ class ListViewDemo(QWidget):
         # 按鈕編輯影片
         self.buttonClip = QPushButton('Edit Video')
         self.buttonClip.clicked.connect(self.VideoEdit_launcher)
-        #layout.addWidget(self.buttonClip)
-
+        self.buttonClip.clicked.connect(self.SetLabel)
 
         self.buttonSub = QPushButton('Generate Subtitle')
         self.buttonSub.clicked.connect(self.Gen_subtitle_popup)
@@ -258,10 +255,9 @@ class ListViewDemo(QWidget):
         video_edit_wkr.setAutoDelete(True)
         self.thd_pool.start(video_edit_wkr)
         
-
-        set_label_wkr = Worker(self.SetLabel)
-        set_label_wkr.setAutoDelete(True)
-        self.thd_pool.start(set_label_wkr)
+        # set_label_wkr = Worker(self.SetLabel)
+        # set_label_wkr.setAutoDelete(True)
+        # self.thd_pool.start(set_label_wkr)
 
     def VideoEdit(self, progress_callback):
         # mp4 轉成 wav -----------------------------
@@ -662,6 +658,7 @@ class Gen_subtitle_popup(QDialog):
     def Export_srt_file(self, progress_callback):
         subtitle_list = self.subtitle_dict[str(self.GetCurrentIndex() + 1)]
 
+
         f = open(self.src_cur_path+self.src_cur_name+'.srt', 'w')
         for i in range(len(subtitle_list)):
             f.write(str(i) + '\n')
@@ -688,6 +685,12 @@ class Gen_subtitle_popup(QDialog):
 
     def GenerateSubtitle(self, progress_callback):
         subtitle_list = self.subtitle_dict[str(self.GetCurrentIndex() + 1)]
+
+        for i in subtitle_list:
+            print(i.time_start, i.time_end)
+            print(i.string)
+            print()
+
         FONT_URL="./resources/GenJyuuGothicL-Medium.ttf"
         def annotate(clip, txt, txt_color='black', fontsize=60):
             """ Writes a text at the bottom of the clip. """
