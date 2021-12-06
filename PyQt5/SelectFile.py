@@ -450,38 +450,29 @@ class Gen_subtitle_popup(QDialog):
         self.src_listview.setFixedHeight(20 * len(self.src_list))
         self.src_listview.setCurrentIndex(self.src_listmodel.index(0,0))
         
-
         # prepare subtitle
         self.subtitle_dict = {} 
-        self.subtitle_dict['1'] = self.getSubtitle(self.src_list[0])
-
-        # handling subtitle go out of screen
-        for index in range(len(self.subtitle_dict['1'])):
-            if 25 < len(self.subtitle_dict['1'][index].string):
-                former, latter = self.subtitle_dict['1'][index].split()
-                self.subtitle_dict['1'][index] = former
-                self.subtitle_dict['1'].insert(index+1, latter)
 
         # adjust box
         self.adjust_table = QTableView()
         self.adjust_model_dict = {}
-        self.adjust_model_dict['1'] = QStandardItemModel(len(self.subtitle_dict['1']), 3)
+        self.adjust_model_dict['1'] = QStandardItemModel(0, 3)
         self.adjust_model_dict['1'].setHorizontalHeaderLabels(['Time start', 'Time end', 'Subtitle'])
         self.adjust_table.setModel(self.adjust_model_dict['1'])
-        for row in range(len(self.subtitle_dict['1'])):
-            for column in range(3):
-                if column == 0:
-                    item = QStandardItem("{}".format(self.subtitle_dict['1'][row].time_start))
-                elif column == 1:
-                    item = QStandardItem("{}".format(self.subtitle_dict['1'][row].time_end))
-                else:
-                    item = QStandardItem("{}".format(self.subtitle_dict['1'][row].string.rstrip('\n')))
+        self.SetupSubtitleAndTable(modelIndex = 1)
+        # for row in range(len(self.subtitle_dict['1'])):
+        #     for column in range(3):
+        #         if column == 0:
+        #             item = QStandardItem("{}".format(self.subtitle_dict['1'][row].time_start))
+        #         elif column == 1:
+        #             item = QStandardItem("{}".format(self.subtitle_dict['1'][row].time_end))
+        #         else:
+        #             item = QStandardItem("{}".format(self.subtitle_dict['1'][row].string.rstrip('\n')))
                 
-                self.adjust_model_dict['1'].setItem(row, column, item)
+        #         self.adjust_model_dict['1'].setItem(row, column, item)
 
         self.adjust_model_dict['1'].itemChanged.connect(self.ModifyItem)
         self.adjust_table.horizontalHeader().setStretchLastSection(True)
-        # self.adjust_table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
         self.adjust_table.setFixedHeight(500)
         self.src_listview.selectionModel().currentChanged.connect(self.AdjustSubtitle)
 
@@ -517,6 +508,23 @@ class Gen_subtitle_popup(QDialog):
         layout.addWidget(self.rst_bar)
         self.setLayout(layout)
 
+    def SetupSubtitleAndTable(self, modelIndex):
+        modelIndex = str(modelIndex)
+        self.subtitle_dict[modelIndex] = self.GetSubtitle(self.src_list[int(modelIndex) - 1])
+
+        for row in range(len(self.subtitle_dict[modelIndex])):
+            for column in range(3):
+                if column == 0:
+                    item = QStandardItem("{}".format(self.subtitle_dict[modelIndex][row].time_start))
+                elif column == 1:
+                    item = QStandardItem("{}".format(self.subtitle_dict[modelIndex][row].time_end))
+                else:
+                    item = QStandardItem("{}".format(self.subtitle_dict[modelIndex][row].string.rstrip('\n')))
+                
+                self.adjust_model_dict[modelIndex].setItem(row, column, item)
+
+        
+
     def ChangeBtnState(self, chkbox, btn):
         if chkbox.isChecked() == True:
             btn.setEnabled(True)
@@ -525,26 +533,26 @@ class Gen_subtitle_popup(QDialog):
 
     def AdjustSubtitle(self, current):
         # print("{}, {}".format(current.row(), previous.row()))
-        slash_pos = self.src_list[current.row()].rfind('/')
-        dot_pos = self.src_list[current.row()].rfind('.')
-        self.src_cur_path, self.src_cur_name, self.src_cur_format = self.src_list[current.row()][:slash_pos+1], self.src_list[current.row()][slash_pos+1:dot_pos], self.src_list[current.row()][dot_pos:]
+        # slash_pos = self.src_list[current.row()].rfind('/')
+        # dot_pos = self.src_list[current.row()].rfind('.')
+        # self.src_cur_path, self.src_cur_name, self.src_cur_format = self.src_list[current.row()][:slash_pos+1], self.src_list[current.row()][slash_pos+1:dot_pos], self.src_list[current.row()][dot_pos:]
         current_row = str(current.row() + 1)
-        if current_row not in self.adjust_model_dict:
-            self.subtitle_dict[current_row] = self.getSubtitle(self.src_list[int(current_row) - 1])
-            self.adjust_model_dict[current_row] = QStandardItemModel(len(self.subtitle_dict[current_row]), 3)
-            self.adjust_model_dict[current_row].setHorizontalHeaderLabels(['Time start', 'Time end', 'Subtitle'])
-            for row in range(len(self.subtitle_dict[current_row])):
-                for column in range(3):
-                    if column == 0:
-                        item = QStandardItem("{}".format(self.subtitle_dict[current_row][row].time_start))
-                    elif column == 1:
-                        item = QStandardItem("{}".format(self.subtitle_dict[current_row][row].time_end))
-                    else:
-                        item = QStandardItem("{}".format(self.subtitle_dict[current_row][row].string.rstrip('\n')))
+        # if current_row not in self.adjust_model_dict:
+        #     self.subtitle_dict[current_row] = self.GetSubtitle(self.src_list[int(current_row) - 1])
+        #     self.adjust_model_dict[current_row] = QStandardItemModel(len(self.subtitle_dict[current_row]), 3)
+        #     self.adjust_model_dict[current_row].setHorizontalHeaderLabels(['Time start', 'Time end', 'Subtitle'])
+        #     for row in range(len(self.subtitle_dict[current_row])):
+        #         for column in range(3):
+        #             if column == 0:
+        #                 item = QStandardItem("{}".format(self.subtitle_dict[current_row][row].time_start))
+        #             elif column == 1:
+        #                 item = QStandardItem("{}".format(self.subtitle_dict[current_row][row].time_end))
+        #             else:
+        #                 item = QStandardItem("{}".format(self.subtitle_dict[current_row][row].string.rstrip('\n')))
                     
-                    self.adjust_model_dict[current_row].setItem(row, column, item)
+        #             self.adjust_model_dict[current_row].setItem(row, column, item)
 
-        self.adjust_model_dict[current_row].itemChanged.connect(self.ModifyItem)
+        # self.adjust_model_dict[current_row].itemChanged.connect(self.ModifyItem)
         self.adjust_table.setModel(self.adjust_model_dict[current_row])
         self.adjust_table.horizontalHeader().setStretchLastSection(True)
         #self.adjust_table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
@@ -570,7 +578,7 @@ class Gen_subtitle_popup(QDialog):
             print(i.string)
             print()
 
-    def getSubtitle(self, srcfile):
+    def GetSubtitle(self, srcfile, blank=True):
         slash_pos = srcfile.rfind('/')
         dot_pos = srcfile.rfind('.')
         src_path, src_name, src_format = srcfile[:slash_pos+1], srcfile[slash_pos+1:dot_pos], srcfile[dot_pos:]
@@ -609,11 +617,18 @@ class Gen_subtitle_popup(QDialog):
 
             i += 1
 
+        if blank:
+            # handling subtitle go out of screen
+            for index in range(len(subtitle_list)):
+                if 25 < len(subtitle_list[index].string):
+                    former, latter = subtitle_list[index].split()
+                    subtitle_list[index] = former
+                    subtitle_list.insert(index+1, latter)
 
-        for i in subtitle_list:
-            print(i.time_start, i.time_end)
-            print(i.string)
-            print()
+        # for i in subtitle_list:
+        #     print(i.time_start, i.time_end)
+        #     print(i.string)
+        #     print()
 
         return subtitle_list
 
