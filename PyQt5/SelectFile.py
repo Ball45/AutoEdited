@@ -258,11 +258,8 @@ class ListViewDemo(QWidget):
         video_edit_wkr.setAutoDelete(True)
         self.thd_pool.start(video_edit_wkr)
         
-<<<<<<< HEAD
-    def statuslable(self):
-=======
 
->>>>>>> 8ae589d592b6fbaa5ccd489867e727fac1d52313
+    def statuslable(self):
         set_label_wkr = Worker(self.SetLabel)
         set_label_wkr.setAutoDelete(True)
         self.thd_pool.start(set_label_wkr)
