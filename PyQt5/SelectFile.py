@@ -459,22 +459,16 @@ class Gen_subtitle_popup(QDialog):
 
         # prepare subtitle
         self.subtitle_dict = {} 
-        self.subtitle_dict['1'] = self.getSubtitle(self.src_list[0])
-
-        # handling subtitle go out of screen
-        for index in range(len(self.subtitle_dict['1'])):
-            if 25 < len(self.subtitle_dict['1'][index].string):
-                former, latter = self.subtitle_dict['1'][index].split()
-                self.subtitle_dict['1'][index] = former
-                self.subtitle_dict['1'].insert(index+1, latter)
 
         # adjust box
         self.adjust_table = QTableView()
         self.adjust_model_dict = {}
-        self.adjust_model_dict['1'] = QStandardItemModel(len(self.subtitle_dict['1']), 3)
+        self.adjust_model_dict['1'] = QStandardItemModel(0, 3)
         self.adjust_model_dict['1'].setHorizontalHeaderLabels(['Time start', 'Time end', 'Subtitle'])
         self.adjust_table.setModel(self.adjust_model_dict['1'])
-        self.SetupSubtitleAndTable_launcher()
+        setup_table_launcher = Worker(self.SetupSubtitleAndTable_launcher)
+        setup_table_launcher.setAutoDelete(True)
+        self.thd_pool.start(setup_table_launcher)
 
         self.adjust_model_dict['1'].itemChanged.connect(self.ModifyItem)
         self.adjust_table.horizontalHeader().setStretchLastSection(True)
@@ -486,7 +480,7 @@ class Gen_subtitle_popup(QDialog):
         self.AcceptSubtitle_chkbox.stateChanged.connect(lambda:self.ChangeBtnState(self.AcceptSubtitle_chkbox, self.gen_subtitle_btn))
         # Generate butten
         self.gen_subtitle_btn = QPushButton('Generate')
-        self.gen_subtitle_btn.clicked.connect(self.Process_gen_subtitle)
+        self.gen_subtitle_btn.clicked.connect(self.GenerateSubtitle_Launcher)
         self.gen_subtitle_btn.setDisabled(True)
 
         self.gen_bar = QStatusBar()
@@ -513,12 +507,14 @@ class Gen_subtitle_popup(QDialog):
         layout.addWidget(self.rst_bar)
         self.setLayout(layout)
 
-    def SetupSubtitleAndTable_launcher(self):
+    def SetupSubtitleAndTable_launcher(self, progress_callback):
         for row in range(self.src_listmodel.rowCount()):
             self.SetupSubtitleAndTable(modelIndex=row)
 
     def SetupSubtitleAndTable(self, modelIndex):
-        modelIndex = str(modelIndex + 1)
+        if not type(modelIndex) == str:
+            modelIndex = str(modelIndex + 1)
+
         self.subtitle_dict[modelIndex] = self.GetSubtitle(self.src_list[int(modelIndex) - 1])
         if modelIndex not in self.adjust_model_dict:
             self.adjust_model_dict[modelIndex] = QStandardItemModel(0, 3)
@@ -531,8 +527,6 @@ class Gen_subtitle_popup(QDialog):
                 
             self.adjust_model_dict[modelIndex].appendRow([item1, item2, item3])
 
-        
-
     def ChangeBtnState(self, chkbox, btn):
         if chkbox.isChecked() == True:
             btn.setEnabled(True)
@@ -542,7 +536,8 @@ class Gen_subtitle_popup(QDialog):
     def AdjustSubtitle(self, current):
         current_row = str(current.row() + 1)
         if current_row not in self.adjust_model_dict:
-            self.SetupSubtitleAndTable(current_row)
+            return
+        #     self.SetupSubtitleAndTable(current_row)
 
         self.adjust_table.setModel(self.adjust_model_dict[current_row])
 
@@ -567,7 +562,7 @@ class Gen_subtitle_popup(QDialog):
             print(i.string)
             print()
 
-    def getSubtitle(self, srcfile):
+    def GetSubtitle(self, srcfile, blank=True):
         slash_pos = srcfile.rfind('/')
         dot_pos = srcfile.rfind('.')
         src_path, src_name, src_format = srcfile[:slash_pos+1], srcfile[slash_pos+1:dot_pos], srcfile[dot_pos:]
@@ -593,7 +588,7 @@ class Gen_subtitle_popup(QDialog):
             print("Region {i}: {r.meta.start:.3f}s -- {r.meta.end:.3f}s".format(i=i, r=r))
             filename = r.save(src_path + "region_{meta.start:.3f}-{meta.end:.3f}.wav")
             start, end = "{r.meta.start:.3f}".format(r=r), "{r.meta.end:.3f}".format(r=r)
-            text = self.audioToText(filename)
+            text = self.AudioToText(filename)
             subtitle_list.append(Subtitle(start, end, text))
 
         i = 0
@@ -606,15 +601,17 @@ class Gen_subtitle_popup(QDialog):
 
             i += 1
 
-
-        for i in subtitle_list:
-            print(i.time_start, i.time_end)
-            print(i.string)
-            print()
+        if blank:
+            # handling subtitle go out of screen
+            for index in range(len(subtitle_list)):
+                if 25 < len(subtitle_list[index].string):
+                    former, latter = subtitle_list[index].split()
+                    subtitle_list[index] = former
+                    subtitle_list.insert(index+1, latter)
 
         return subtitle_list
 
-    def audioToText(self, audiofile):
+    def AudioToText(self, audiofile):
         recognizer = sr.Recognizer()
         with sr.AudioFile(audiofile) as src:
             audio_data = recognizer.record(src)
@@ -630,7 +627,7 @@ class Gen_subtitle_popup(QDialog):
 
             return ' '
 
-    def Process_gen_subtitle(self):
+    def GenerateSubtitle_Launcher(self):
         setui_wkr = Worker(self.SetUI)
         setui_wkr.setAutoDelete(True)
         self.thd_pool.start(setui_wkr)
