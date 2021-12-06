@@ -174,6 +174,7 @@ class ListViewDemo(QWidget):
         # 按鈕編輯影片
         self.buttonClip = QPushButton('Edit Video')
         self.buttonClip.clicked.connect(self.VideoEdit_launcher)
+        self.buttonClip.clicked.connect(self.SetLabel)
         #layout.addWidget(self.buttonClip)
 
 
@@ -259,7 +260,7 @@ class ListViewDemo(QWidget):
         self.thd_pool.start(video_edit_wkr)
         
 
-    def statuslable(self):
+    def status_lable(self):
         set_label_wkr = Worker(self.SetLabel)
         set_label_wkr.setAutoDelete(True)
         self.thd_pool.start(set_label_wkr)
@@ -418,12 +419,12 @@ class ListViewDemo(QWidget):
             index = self.listModel.index(row, 0)
             self.listModel.setData(index, outfile) 
             self.statusLabel.setText('\nResult: File exported done')
-            '''
+            
             vlc = "/Applications/VLC.app/Contents/MacOS/VLC"
             p1 =subprocess.run ([''+vlc+'', ''+outfile+'',  'vlc://quit'])
             print(p1)
 
-            
+            '''
             ListViewDemo.DelListItem(self)
             self.buttonClip.setEnabled(True)
             '''
