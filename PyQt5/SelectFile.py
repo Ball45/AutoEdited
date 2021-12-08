@@ -64,7 +64,6 @@ class WorkerSignals(QObject):
     result = pyqtSignal(object)
     progress = pyqtSignal(int)
 
-
 class Worker(QRunnable):
     '''
     Worker thread
@@ -145,7 +144,6 @@ class ListViewDemo(QWidget):
         self.buttonRemoveFile.clicked.connect(self.RemovePath)
         layout.addWidget(self.buttonRemoveFile)
 
-
         self.buttonRemoveAll = QPushButton('Empty List')
         self.buttonRemoveAll.clicked.connect(self.DelListItem)
         layout.addWidget(self.buttonRemoveAll)
@@ -175,8 +173,11 @@ class ListViewDemo(QWidget):
         self.buttonClip = QPushButton('Edit Video')
         self.buttonClip.clicked.connect(self.VideoEdit_launcher)
         self.buttonClip.clicked.connect(self.SetLabel)
+<<<<<<< HEAD
+=======
         #layout.addWidget(self.buttonClip)
 
+>>>>>>> c326c1d8e276e501d855e392fa0f1e989d6b3d91
 
         self.buttonSub = QPushButton('Generate Subtitle')
         self.buttonSub.clicked.connect(self.Gen_subtitle_popup)
@@ -259,11 +260,17 @@ class ListViewDemo(QWidget):
         video_edit_wkr.setAutoDelete(True)
         self.thd_pool.start(video_edit_wkr)
         
+<<<<<<< HEAD
+        # set_label_wkr = Worker(self.SetLabel)
+        # set_label_wkr.setAutoDelete(True)
+        # self.thd_pool.start(set_label_wkr)
+=======
 
     def status_lable(self):
         set_label_wkr = Worker(self.SetLabel)
         set_label_wkr.setAutoDelete(True)
         self.thd_pool.start(set_label_wkr)
+>>>>>>> c326c1d8e276e501d855e392fa0f1e989d6b3d91
 
     def VideoEdit(self, progress_callback):
         # mp4 轉成 wav -----------------------------
@@ -583,44 +590,62 @@ class Gen_subtitle_popup(QDialog):
             print(i.string)
             print()
 
-    def GetSubtitle(self, srcfile, blank=True):
+    def GetSrcArg(self, srcfile):
         slash_pos = srcfile.rfind('/')
         dot_pos = srcfile.rfind('.')
-        src_path, src_name, src_format = srcfile[:slash_pos+1], srcfile[slash_pos+1:dot_pos], srcfile[dot_pos:]
+        return srcfile[:slash_pos+1], srcfile[slash_pos+1:dot_pos], srcfile[dot_pos:]
 
-        if not os.path.exists(src_path + 'wav/'):
-            os.mkdir(src_path + 'wav/')
 
-        src_path += 'wav/'
-        if not os.path.exists(src_path + src_name + '.wav'):
-            os.system("ffmpeg -i "+srcfile+" "+src_path + src_name + '.wav')
+    def GetSubtitle(self, srcfile, blank=True):
+        src_path, src_name, src_format = self.GetSrcArg(srcfile)
 
-        audiofile = src_path + src_name+'.wav'
-        audio_regions = auditok.split(
-            audiofile,
-            min_dur=0.01,        # minimum duration of a valid audio event in seconds
-            max_dur=100,        # maximum duration of an event
-            max_silence=0.3,      # maximum duration of tolerated continuous silence within an event
-            energy_threshold=60  # threshold of detection
-        )
+        if os.path.exists(src_path + src_name + '.srt'):
+            file = open(src_path + src_name + '.srt', encoding='utf-8')
+            subtitle_line = file.readlines()
+            file.close()
 
-        subtitle_list = []
-        for i, r in enumerate(audio_regions):
-            print("Region {i}: {r.meta.start:.3f}s -- {r.meta.end:.3f}s".format(i=i, r=r))
-            filename = r.save(src_path + "region_{meta.start:.3f}-{meta.end:.3f}.wav")
-            start, end = "{r.meta.start:.3f}".format(r=r), "{r.meta.end:.3f}".format(r=r)
-            text = self.AudioToText(filename)
-            subtitle_list.append(Subtitle(start, end, text))
+            subtitle_list = []
+            for index in range(0, len(subtitle_line), 4):
+                string = subtitle_line[index + 2]
+                pos = subtitle_line[index + 1].find('-')
+                time_start = subtitle_line[index + 1][:pos-1]
+                time_end = subtitle_line[index+1][pos+4:]
+                subtitle_list.append(Subtitle(time_start, time_end, string))
 
-        i = 0
-        while i < len(subtitle_list) - 1:
-            if subtitle_list[i].time_end < subtitle_list[i+1].time_start:
-                time_start = subtitle_list[i].time_end
-                time_end = subtitle_list[i+1].time_start
-                subtitle_list.insert(i+1, Subtitle(time_start, time_end))
+        else:
+            if not os.path.exists(src_path + 'wav/'):
+                os.mkdir(src_path + 'wav/')
+
+            src_path += 'wav/'
+            if not os.path.exists(src_path + src_name + '.wav'):
+                os.system("ffmpeg -i "+srcfile+" "+src_path + src_name + '.wav')
+
+            audiofile = src_path + src_name+'.wav'
+            audio_regions = auditok.split(
+                audiofile,
+                min_dur=0.01,        # minimum duration of a valid audio event in seconds
+                max_dur=100,        # maximum duration of an event
+                max_silence=0.3,      # maximum duration of tolerated continuous silence within an event
+                energy_threshold=60  # threshold of detection
+            )
+
+            subtitle_list = []
+            for i, r in enumerate(audio_regions):
+                print("Region {i}: {r.meta.start:.3f}s -- {r.meta.end:.3f}s".format(i=i, r=r))
+                filename = r.save(src_path + "region_{meta.start:.3f}-{meta.end:.3f}.wav")
+                start, end = "{r.meta.start:.3f}".format(r=r), "{r.meta.end:.3f}".format(r=r)
+                text = self.AudioToText(filename)
+                subtitle_list.append(Subtitle(start, end, text))
+
+            i = 0
+            while i < len(subtitle_list) - 1:
+                if subtitle_list[i].time_end < subtitle_list[i+1].time_start:
+                    time_start = subtitle_list[i].time_end
+                    time_end = subtitle_list[i+1].time_start
+                    subtitle_list.insert(i+1, Subtitle(time_start, time_end))
+                    i += 1
+
                 i += 1
-
-            i += 1
 
         if blank:
             # handling subtitle go out of screen
@@ -649,29 +674,33 @@ class Gen_subtitle_popup(QDialog):
             return ' '
 
     def GenerateSubtitle_Launcher(self):
+        current_row = self.GetCurrentIndex()
         setui_wkr = Worker(self.SetUI)
         setui_wkr.setAutoDelete(True)
         self.thd_pool.start(setui_wkr)
 
-        eprt_srt_wkr = Worker(self.Export_srt_file)
+        eprt_srt_wkr = Worker(self.Export_srt_file, current_row)
         eprt_srt_wkr.setAutoDelete(True)
         self.thd_pool.start(eprt_srt_wkr)
 
-        gen_subtitle_wkr = Worker(self.GenerateSubtitle)
+        gen_subtitle_wkr = Worker(self.GenerateSubtitle, current_row)
         gen_subtitle_wkr.setAutoDelete(True)
         self.thd_pool.start(gen_subtitle_wkr)
 
-    def Export_srt_file(self, progress_callback):
-        subtitle_list = self.subtitle_dict[str(self.GetCurrentIndex() + 1)]
+    def Export_srt_file(self, row, progress_callback):
+        src_path, src_name, src_format = self.GetSrcArg(self.src_list[row])
+        row = str(row+1)
+        subtitle_list = self.subtitle_dict[row]
 
-        f = open(self.src_cur_path+self.src_cur_name+'.srt', 'w')
+        f = open(src_path+src_name+'.srt', 'w')
         for i in range(len(subtitle_list)):
             f.write(str(i) + '\n')
             f.write(subtitle_list[i].time_start + ' --> ' + subtitle_list[i].time_end + '\n')
             f.write(subtitle_list[i].string + '\n')
+            f.write('\n')
 
         f.close()
-        self.Export_msg_to_mdl(self.rst_model, self.src_cur_path + self.src_cur_name + ".srt")
+        self.Export_msg_to_mdl(self.rst_model, src_path+src_name+'.srt')
 
     def Export_msg_to_mdl(self, model, msg, withtime = True):
         row = model.rowCount()
@@ -688,8 +717,16 @@ class Gen_subtitle_popup(QDialog):
         self.AcceptSubtitle_chkbox.setChecked(False)
         self.Export_msg_to_mdl(self.rst_model, "Generating subtitle...")
 
-    def GenerateSubtitle(self, progress_callback):
-        subtitle_list = self.subtitle_dict[str(self.GetCurrentIndex() + 1)]
+    def GenerateSubtitle(self, row, progress_callback):
+        src_path, src_name, src_format = self.GetSrcArg(self.src_list[row])
+        row = str(row+1)
+        subtitle_list = self.subtitle_dict[row]
+
+        for i in subtitle_list:
+            print(i.time_start, i.time_end)
+            print(i.string)
+            print()
+
         FONT_URL="./resources/GenJyuuGothicL-Medium.ttf"
         def annotate(clip, txt, txt_color='black', fontsize=60):
             """ Writes a text at the bottom of the clip. """
@@ -698,14 +735,14 @@ class Gen_subtitle_popup(QDialog):
             return cvc.set_duration(clip.duration)
 
         # bind subtitle file into video stream
-        src_clip = VideoFileClip(self.src_cur_path + self.src_cur_name + self.src_cur_format)
+        src_clip = VideoFileClip(src_path + src_name + src_format)
         annotated_clips = []
         for subtitle in subtitle_list:
             annotated_clips.append(annotate(src_clip.subclip(subtitle.time_start, subtitle.time_end), subtitle.string))
 
         final_clip = concatenate_videoclips(annotated_clips)
-        final_clip.write_videofile(self.src_cur_path + self.src_cur_name + "_with_subtitle.mp4")
-        self.Export_msg_to_mdl(self.rst_model, self.src_cur_path + self.src_cur_name + "_with_subtitle.mp4")
+        final_clip.write_videofile(src_path + src_name + "_with_subtitle.mp4")
+        self.Export_msg_to_mdl(self.rst_model, src_path + src_name + "_with_subtitle.mp4")
         self.Export_msg_to_mdl(self.rst_model, "Done.")
 
 if __name__ == "__main__" :
