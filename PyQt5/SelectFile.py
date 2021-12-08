@@ -163,7 +163,6 @@ class Edit_videos_windows(QWidget):
         # 按鈕編輯影片
         self.buttonClip = QPushButton('Edit Video')
         self.buttonClip.clicked.connect(self.VideoEdit_launcher)
-        # self.buttonClip.clicked.connect(self.SetLabel)
         self.buttonSub = QPushButton('Generate Subtitle')
         self.buttonSub.clicked.connect(self.Gen_subtitle_popup)
         self.bnt2bar = QStatusBar(self)
@@ -183,7 +182,7 @@ class Edit_videos_windows(QWidget):
         self.rst_model = QStringListModel()
         self.rst_list.setModel(self.rst_model)
         # self.rst_list.setFixedHeight(100)
-        # self.rst_list.setEditTriggers(QAbstractItemView.NoEditTriggers)
+        self.rst_list.setEditTriggers(QAbstractItemView.NoEditTriggers)
         # self.rst_bar = QStatusBar()
         # self.rst_bar.addPermanentWidget(self.rst_label, stretch = 1)
         # self.rst_bar.addPermanentWidget(self.rst_list, stretch=16)
@@ -230,9 +229,9 @@ class Edit_videos_windows(QWidget):
             self.listModel.removeRow(self.listview.modelColumn())
 
     def Export_msg_to_mdl(self, model, msg, src=None, withtime = True):
-        row = model.rowCount()
-        model.insertRow(row)
-        index = model.index(row, 0)
+        # row = model.rowCount()
+        model.insertRow(0)
+        index = model.index(0, 0)
         current_time = time.strftime("%H:%M:%S", time.localtime())
         print(msg)
         if withtime:
@@ -257,19 +256,28 @@ class Edit_videos_windows(QWidget):
             return
 
         self.buttonClip.setDisabled(True)
+        self.buttonSub.setDisabled(True)
         for row in range(rows):
             src_path, src_name, src_format = self.GetSrcArg(self.listModel.stringList()[row])
             video_edit_wkr = Worker(self.VideoEdit, src_path, src_name, src_format)
             video_edit_wkr.setAutoDelete(True)
             self.thd_pool.start(video_edit_wkr)
 
+        ChaneBtnState_wkr = Worker(self.ChaneBtnState_waitpool)
+        ChaneBtnState_wkr.setAutoDelete(True)
+        self.thd_pool.start(ChaneBtnState_wkr)
 
+    def ChaneBtnState_waitpool(self, progress_callback):
+        while 1 < self.thd_pool.activeThreadCount():
+            pass
+        
+        self.buttonSub.setEnabled(True)
 
     def VideoEdit(self, src_path, src_name, src_format, progress_callback):
         srcfile = src_path + src_name + src_format
         wavfile = src_path + src_name + '.wav'     # 執行完刪除 *wav
         outfile = src_path + src_name + '_edited.mp4' # 把檔案存在自己想要的地方
-        self.Export_msg_to_mdl(self.rst_model, "Loading:", src_name + src_format)
+        self.Export_msg_to_mdl(self.rst_model, "Loading :", src_name + src_format)
 
         if not os.path.exists(wavfile):
             os.system("ffmpeg -i " + srcfile + " " + src_path + src_name + '.wav')
@@ -281,7 +289,7 @@ class Edit_videos_windows(QWidget):
         clip.release()
 
         # 測試靜音 ----------------------------------
-        self.Export_msg_to_mdl(self.rst_model, "Detecting:", src_name + src_format)
+        self.Export_msg_to_mdl(self.rst_model, "Detecting :", src_name + src_format)
         # split returns a generator of AudioRegion objects
         # sound = AudioSegment.from_file(wavfile, format="wav") 
         audio_regions = auditok.split(
@@ -356,7 +364,7 @@ class Edit_videos_windows(QWidget):
 
                                 
         # 轉灰階--------------------------------------
-        self.Export_msg_to_mdl(self.rst_model, "Comparing:", src_name + src_format)
+        self.Export_msg_to_mdl(self.rst_model, "Comparing :", src_name + src_format)
         for i in range(0,len(ins_loca)-1,2):
             grayclip = VideoFileClip(srcfile).subclip(round(ins_loca[i],2),round(ins_loca[i+1],2))
             gray_scalar = []
@@ -393,7 +401,7 @@ class Edit_videos_windows(QWidget):
         print('subclip[(from_t, to_t)]:',subclip_sec)
 
         # 剪接 -------------------------------------
-        self.Export_msg_to_mdl(self.rst_model, "Cropping:", src_name + src_format)
+        self.Export_msg_to_mdl(self.rst_model, "Cropping :", src_name + src_format)
         clips = []
         for i in range(0,len(subclip_sec),2):
             if i == (len(subclip_sec)-2):
@@ -404,11 +412,11 @@ class Edit_videos_windows(QWidget):
                 #print("subclip(",subclip_sec[i],", ",subclip_sec[i+1],")")  
             clips.append(clip)
         print ('sub: ', clips)
-        self.Export_msg_to_mdl(self.rst_model, "Exporting:", src_name + "_edited" + src_format)
+        self.Export_msg_to_mdl(self.rst_model, "Exporting :", src_name + "_edited" + src_format)
         final_clip = concatenate_videoclips(clips)
         final_clip.write_videofile(outfile)
         final_clip.close()
-        self.Export_msg_to_mdl(self.rst_model, "Done:", src_name + "_edited" + src_format)
+        self.Export_msg_to_mdl(self.rst_model, "Done :", src_name + "_edited" + src_format)
         for row in range(len(self.listModel.stringList())):
             if srcfile == self.listModel.stringList()[row]:
                 index = self.listModel.index(row, 0)
@@ -448,7 +456,6 @@ class Gen_subtitle_popup(QDialog):
         self.src_cur_path, self.src_cur_name, self.src_cur_format = src_list[0][:slash_pos+1], src_list[0][slash_pos+1:dot_pos], src_list[0][dot_pos:]
         self.setWindowTitle('Generate Subtitle')
         self.resize(700, 550)
-        # self.rst_list = []
         self.initUI()
 
     def initUI(self):
@@ -528,7 +535,7 @@ class Gen_subtitle_popup(QDialog):
         for row in range(self.src_listmodel.rowCount()):
             self.SetupSubtitleAndTable(modelIndex=row)
 
-    def SetupSubtitleAndTable(self, modelIndex):
+    def SetupSubtitleAndTable(self, modelIndex, progress_callback):
         if not type(modelIndex) == str:
             modelIndex = str(modelIndex + 1)
 
