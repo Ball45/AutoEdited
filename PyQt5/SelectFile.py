@@ -251,174 +251,178 @@ class Edit_videos_windows(QWidget):
         # QMessageBox.information(self,'Message','Your file is being processed',QMessageBox.Ok)
                 
     def VideoEdit_launcher(self):
-        row = self.listModel.rowCount()
-        if row == 0:
+        rows = self.listModel.rowCount()
+        if rows == 0:
             QMessageBox.information(self,'Message','Please selected file first', QMessageBox.Ok)
             return
 
         self.buttonClip.setDisabled(True)
-        video_edit_wkr = Worker(self.VideoEdit)
-        video_edit_wkr.setAutoDelete(True)
-        self.thd_pool.start(video_edit_wkr)
+        for row in range(rows):
+            src_path, src_name, src_format = self.GetSrcArg(self.listModel.stringList()[row])
+            video_edit_wkr = Worker(self.VideoEdit, src_path, src_name, src_format)
+            video_edit_wkr.setAutoDelete(True)
+            self.thd_pool.start(video_edit_wkr)
 
-    def VideoEdit(self, progress_callback):
-        # mp4 轉成 wav -----------------------------
-        #inputfile = "media/tainanvlog.mp4"
-        rowCount = self.listModel.rowCount()
-        for row in range(rowCount):   
-            self.Export_msg_to_mdl(self.rst_model, "Loading:", self.listModel.stringList()[row])
-            source_file = self.listModel.stringList()[row]
-            slash_pos = source_file.rfind('/')
-            dot_pos = source_file.rfind('.')
-            source_path, source_name, source_format = source_file[:slash_pos+1], source_file[slash_pos+1:dot_pos], source_file[dot_pos:]
-            wavfile = source_path + source_name + '.wav'     # 執行完刪除 *wav
-            outfile = source_path + source_name + '_edited.mp4' # 把檔案存在自己想要的地方
-            
 
-            if not os.path.exists(wavfile):
-                os.system("ffmpeg -i "+source_file+" "+source_path + source_name + '.wav')
 
-            # 找出fps---------------------------------------
-            clip = cv2.VideoCapture(source_file)
-            fps = clip.get(cv2.CAP_PROP_FPS)
-            fps = round(fps,)       
-            clip.release()
+    def VideoEdit(self, src_path, src_name, src_format, progress_callback):
+        srcfile = src_path + src_name + src_format
+        wavfile = src_path + src_name + '.wav'     # 執行完刪除 *wav
+        outfile = src_path + src_name + '_edited.mp4' # 把檔案存在自己想要的地方
+        self.Export_msg_to_mdl(self.rst_model, "Loading:", src_name + src_format)
 
-            # 測試靜音 ----------------------------------
-            self.Export_msg_to_mdl(self.rst_model, "Detecting:", self.listModel.stringList()[row])
-            # split returns a generator of AudioRegion objects
-            # sound = AudioSegment.from_file(wavfile, format="wav") 
-            audio_regions = auditok.split(
-                wavfile,
-                min_dur=0.2,         # minimum duration of a valid audio event in seconds
-                max_dur=100,         # maximum duration of an event
-                max_silence=2,       # maximum duration of tolerated continuous silence within an event
-                energy_threshold=50  # threshold of detection
-            )
+        if not os.path.exists(wavfile):
+            os.system("ffmpeg -i " + srcfile + " " + src_path + src_name + '.wav')
 
-            record_start = np.zeros(1000)
-            record_end = np.zeros(1000)
-            silence_duration = np.zeros(1000)
-            speech_duration = np.zeros(1000)
-            num = 0
-            ins_loca=[]
-            subclip_sec=[]
+        # 找出fps---------------------------------------
+        clip = cv2.VideoCapture(srcfile)
+        fps = clip.get(cv2.CAP_PROP_FPS)
+        fps = round(fps,)       
+        clip.release()
 
-            for i, r in enumerate(audio_regions):
-                record_start[i] = r.meta.start
-                record_end[i] = r.meta.end
-                num = num+1
+        # 測試靜音 ----------------------------------
+        self.Export_msg_to_mdl(self.rst_model, "Detecting:", src_name + src_format)
+        # split returns a generator of AudioRegion objects
+        # sound = AudioSegment.from_file(wavfile, format="wav") 
+        audio_regions = auditok.split(
+            wavfile,
+            min_dur=0.2,         # minimum duration of a valid audio event in seconds
+            max_dur=100,         # maximum duration of an event
+            max_silence=2,       # maximum duration of tolerated continuous silence within an event
+            energy_threshold=50  # threshold of detection
+        )
 
-            for j in range(num-1):
-                # evaluate silence section length
-                silence_duration[j] = record_start[j+1] - record_end[j]
-                print("Silence ", j, " :", round(record_end[j], 3), 's', 'to', round(record_start[j+1], 3), 's, Duration : ', round(silence_duration[j],3))
+        record_start = np.zeros(1000)
+        record_end = np.zeros(1000)
+        silence_duration = np.zeros(1000)
+        speech_duration = np.zeros(1000)
+        num = 0
+        ins_loca=[]
+        subclip_sec=[]
 
-                # if there are two continuous silence sections >2.5 
-                if silence_duration[j-1] > 1.4 and silence_duration[j] > 1.4 and speech_duration[j] < 5.0:
-                    #print("instruction : ", round(record_start[j], 3), 's', 'to', round(record_end[j], 3), 's')
+        for i, r in enumerate(audio_regions):
+            record_start[i] = r.meta.start
+            record_end[i] = r.meta.end
+            num = num+1
 
-            # 辨識是否為語音指令“剪接” ---------------------------
-                    r = sr.Recognizer()
-                    instruction = sr.AudioFile(wavfile)
-                    with instruction as source:
-                        audio = r.record(source, offset = record_start[j], duration = 5)
-                    try:
-                        ins = r.recognize_google(audio_data=audio, key=None,language="zh-TW", show_all=True)
-                        if "剪接" in str(ins):
-                            print("instruction ", round(record_start[j], 3), 's to', round(record_end[j], 3), 's'," : 剪接")      
+        for j in range(num-1):
+            # evaluate silence section length
+            silence_duration[j] = record_start[j+1] - record_end[j]
+            print("Silence ", j, " :", round(record_end[j], 3), 's', 'to', round(record_start[j+1], 3), 's, Duration : ', round(silence_duration[j],3))
 
-                            # 抓影片前5秒進行辨識
-                            before_ins_end = int(record_end[j-1])      #指令前的結束時間
-                            if (before_ins_end-5) < 0 :
-                                before_ins_start=0
-                                sec = float(before_ins_end)
-                            else :
-                                before_ins_start = before_ins_end-5    #指令前的起始時間
-                                sec = 5
-                            
-                            after_ins_start = float(record_start[j+1]) # 指令後的起始時間
-                            print('往前抓＿秒進行辨識:',sec)
-                                    
-                            ins_loca.append(float(before_ins_start))
-                            ins_loca.append(float(after_ins_start))
+            # if there are two continuous silence sections >2.5 
+            if silence_duration[j-1] > 1.4 and silence_duration[j] > 1.4 and speech_duration[j] < 5.0:
+                #print("instruction : ", round(record_start[j], 3), 's', 'to', round(record_end[j], 3), 's')
+
+        # 辨識是否為語音指令“剪接” ---------------------------
+                r = sr.Recognizer()
+                instruction = sr.AudioFile(wavfile)
+                with instruction as source:
+                    audio = r.record(source, offset = record_start[j], duration = 5)
+                try:
+                    ins = r.recognize_google(audio_data=audio, key=None,language="zh-TW", show_all=True)
+                    if "剪接" in str(ins):
+                        print("instruction ", round(record_start[j], 3), 's to', round(record_end[j], 3), 's'," : 剪接")      
+
+                        # 抓影片前5秒進行辨識
+                        before_ins_end = int(record_end[j-1])      #指令前的結束時間
+                        if (before_ins_end-5) < 0 :
+                            before_ins_start=0
+                            sec = float(before_ins_end)
+                        else :
+                            before_ins_start = before_ins_end-5    #指令前的起始時間
+                            sec = 5
                         
-                        else:
-                            print(ins,'pass')
-                            pass
+                        after_ins_start = float(record_start[j+1]) # 指令後的起始時間
+                        print('往前抓＿秒進行辨識:',sec)
+                                
+                        ins_loca.append(float(before_ins_start))
+                        ins_loca.append(float(after_ins_start))
                     
-                    except sr.UnknownValueError:   
-                        ins = "無法翻譯"
-                    except sr.RequestError as e:
-                        ins = "無法翻譯{0}".format(e)
-                            
-            for i in range(1,len(ins_loca)-1,2):
-                if ins[i]> ins[i+1]:
-                    del ins[i]
-                    del ins[i+1]
-            print('ins:',ins_loca)
-
-                                    
-            # 轉灰階--------------------------------------
-            self.Export_msg_to_mdl(self.rst_model, "Cropping:", self.listModel.stringList()[row])
-            for i in range(0,len(ins_loca)-1,2):
-                grayclip = VideoFileClip(source_file).subclip(round(ins_loca[i],2),round(ins_loca[i+1],2))
-                gray_scalar = []
-                for frames in grayclip.iter_frames():
-                    gray = cv2.cvtColor(frames, cv2.COLOR_BGR2GRAY)
-                    #cv2.imshow("gray", gray) #播放灰階影片
-                    gray_scalar.append(gray)
-                    key = cv2.waitKey(1)
-                    if key == ord("q"):
-                        break;
-                print('轉灰階成功clip :', round(before_ins_start,2),'s - ', round(after_ins_start,2),'s ')        
-                #print(len(gray_scalar))
-            
-            # 偵測重複 ----------------------------------
-                min = 100000000000
+                    else:
+                        print(ins,'pass')
+                        pass
                 
-                for i in range(sec*fps):
-                    before_ins = gray_scalar[i]
-                    after_ins = gray_scalar[len(gray_scalar)-1]
-                    
-                    d = (before_ins-after_ins)**2
-                    
-                    if min > d.sum():
-                        cutpoint = (before_ins_start*fps+i)/fps 
-                        min = d.sum()
-                    #print('t : ', round(before_ins_start*fps+i+j, 1)/fps,' ', d.sum())          
-                #輸出最相近
-                print(cutpoint, min)
-                subclip_sec.append(float(cutpoint))
-                subclip_sec.append(float(after_ins_start))
+                except sr.UnknownValueError:   
+                    ins = "無法翻譯"
+                except sr.RequestError as e:
+                    ins = "無法翻譯{0}".format(e)
+                        
+        for i in range(1,len(ins_loca)-1,2):
+            if ins[i]> ins[i+1]:
+                del ins[i]
+                del ins[i+1]
+        print('ins:',ins_loca)
 
-            subclip_sec.insert(0, 0)
-            subclip_sec.append(' ')
-            print('subclip[(from_t, to_t)]:',subclip_sec)
-
-            # 剪接 -------------------------------------
-            clips = []
-            for i in range(0,len(subclip_sec),2):
-                if i == (len(subclip_sec)-2):
-                    clip = VideoFileClip(source_file).subclip(subclip_sec[i], )
-                    #print("subclip(",subclip_sec[i],", )")  
-                else:
-                    clip = VideoFileClip(source_file).subclip(subclip_sec[i], subclip_sec[i+1])
-                    #print("subclip(",subclip_sec[i],", ",subclip_sec[i+1],")")  
-                clips.append(clip)
-            print ('sub: ', clips)
-            self.Export_msg_to_mdl(self.rst_model, "Exporting:", outfile)
-            final_clip = concatenate_videoclips(clips)
-            final_clip.write_videofile(outfile)
-            final_clip.close()
-
-            index = self.listModel.index(row, 0)
-            self.listModel.setData(index, outfile) 
-            self.Export_msg_to_mdl(self.rst_model, "Done:", outfile)
+                                
+        # 轉灰階--------------------------------------
+        self.Export_msg_to_mdl(self.rst_model, "Comparing:", src_name + src_format)
+        for i in range(0,len(ins_loca)-1,2):
+            grayclip = VideoFileClip(srcfile).subclip(round(ins_loca[i],2),round(ins_loca[i+1],2))
+            gray_scalar = []
+            for frames in grayclip.iter_frames():
+                gray = cv2.cvtColor(frames, cv2.COLOR_BGR2GRAY)
+                #cv2.imshow("gray", gray) #播放灰階影片
+                gray_scalar.append(gray)
+                key = cv2.waitKey(1)
+                if key == ord("q"):
+                    break;
+            print('轉灰階成功clip :', round(before_ins_start,2),'s - ', round(after_ins_start,2),'s ')        
+            #print(len(gray_scalar))
+        
+        # 偵測重複 ----------------------------------
+            min = 100000000000
             
-            # vlc = "/Applications/VLC.app/Contents/MacOS/VLC"
-            # p1 =subprocess.run ([''+vlc+'', ''+outfile+'',  'vlc://quit'])
-            # print(p1)
+            for i in range(sec*fps):
+                before_ins = gray_scalar[i]
+                after_ins = gray_scalar[len(gray_scalar)-1]
+                
+                d = (before_ins-after_ins)**2
+                
+                if min > d.sum():
+                    cutpoint = (before_ins_start*fps+i)/fps 
+                    min = d.sum()
+                #print('t : ', round(before_ins_start*fps+i+j, 1)/fps,' ', d.sum())          
+            #輸出最相近
+            print(cutpoint, min)
+            subclip_sec.append(float(cutpoint))
+            subclip_sec.append(float(after_ins_start))
+
+        subclip_sec.insert(0, 0)
+        subclip_sec.append(' ')
+        print('subclip[(from_t, to_t)]:',subclip_sec)
+
+        # 剪接 -------------------------------------
+        self.Export_msg_to_mdl(self.rst_model, "Cropping:", src_name + src_format)
+        clips = []
+        for i in range(0,len(subclip_sec),2):
+            if i == (len(subclip_sec)-2):
+                clip = VideoFileClip(srcfile).subclip(subclip_sec[i], )
+                #print("subclip(",subclip_sec[i],", )")  
+            else:
+                clip = VideoFileClip(srcfile).subclip(subclip_sec[i], subclip_sec[i+1])
+                #print("subclip(",subclip_sec[i],", ",subclip_sec[i+1],")")  
+            clips.append(clip)
+        print ('sub: ', clips)
+        self.Export_msg_to_mdl(self.rst_model, "Exporting:", src_name + "_edited" + src_format)
+        final_clip = concatenate_videoclips(clips)
+        final_clip.write_videofile(outfile)
+        final_clip.close()
+        self.Export_msg_to_mdl(self.rst_model, "Done:", src_name + "_edited" + src_format)
+        for row in range(len(self.listModel.stringList())):
+            if srcfile == self.listModel.stringList()[row]:
+                index = self.listModel.index(row, 0)
+                self.listModel.setData(index, outfile) 
+                break
+            
+        # vlc = "/Applications/VLC.app/Contents/MacOS/VLC"
+        # p1 =subprocess.run ([''+vlc+'', ''+outfile+'',  'vlc://quit'])
+        # print(p1)
+
+    def GetSrcArg(self, srcfile):
+        slash_pos = srcfile.rfind('/')
+        dot_pos = srcfile.rfind('.')
+        return srcfile[:slash_pos+1], srcfile[slash_pos+1:dot_pos], srcfile[dot_pos:]
 
     def Gen_subtitle_popup(self):
         if self.listModel.rowCount() <= 0:
