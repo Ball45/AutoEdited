@@ -710,7 +710,7 @@ class Gen_subtitle_popup(QDialog):
 
 if __name__ == "__main__" :
     app = QApplication(sys.argv)
-    app.setWindowIcon(QIcon('./resources/firefox-icon-02.png'))
+    app.setWindowIcon(QIcon('./resources/1179069.png'))
     win = ListViewDemo()
     win.show()
     sys.exit(app.exec_())
