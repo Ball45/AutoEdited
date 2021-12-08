@@ -173,11 +173,6 @@ class ListViewDemo(QWidget):
         self.buttonClip = QPushButton('Edit Video')
         self.buttonClip.clicked.connect(self.VideoEdit_launcher)
         self.buttonClip.clicked.connect(self.SetLabel)
-<<<<<<< HEAD
-=======
-        #layout.addWidget(self.buttonClip)
-
->>>>>>> c326c1d8e276e501d855e392fa0f1e989d6b3d91
 
         self.buttonSub = QPushButton('Generate Subtitle')
         self.buttonSub.clicked.connect(self.Gen_subtitle_popup)
@@ -260,17 +255,14 @@ class ListViewDemo(QWidget):
         video_edit_wkr.setAutoDelete(True)
         self.thd_pool.start(video_edit_wkr)
         
-<<<<<<< HEAD
         # set_label_wkr = Worker(self.SetLabel)
         # set_label_wkr.setAutoDelete(True)
         # self.thd_pool.start(set_label_wkr)
-=======
 
     def status_lable(self):
         set_label_wkr = Worker(self.SetLabel)
         set_label_wkr.setAutoDelete(True)
         self.thd_pool.start(set_label_wkr)
->>>>>>> c326c1d8e276e501d855e392fa0f1e989d6b3d91
 
     def VideoEdit(self, progress_callback):
         # mp4 轉成 wav -----------------------------
@@ -747,7 +739,7 @@ class Gen_subtitle_popup(QDialog):
 
 if __name__ == "__main__" :
     app = QApplication(sys.argv)
-    app.setWindowIcon(QIcon('./resources/firefox-icon-02.png'))
+    app.setWindowIcon(QIcon('PyQt5/resources/firefox-icon-02.png'))
     win = ListViewDemo()
     win.show()
     sys.exit(app.exec_())
