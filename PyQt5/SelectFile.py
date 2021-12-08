@@ -122,9 +122,9 @@ class WorkThread(QThread):
                 break;
             self.timer.emit()  # 發送timer信號
 
-class ListViewDemo(QWidget):
+class Edit_videos_windows(QWidget):
     def __init__(self, parent = None):
-        super(ListViewDemo, self).__init__(parent)
+        super(Edit_videos_windows, self).__init__(parent)
         self.thd_pool = QThreadPool()
         self.setWindowTitle('智慧影音接軌')
         self.resize(600,500)
@@ -137,16 +137,10 @@ class ListViewDemo(QWidget):
         # 按鈕選擇檔案
         self.buttonOpenFile = QPushButton('Select File')
         self.buttonOpenFile.clicked.connect(self.LoadPath) 
-        layout.addWidget(self.buttonOpenFile)
-
-        # 按鈕移除檔案
         self.buttonRemoveFile = QPushButton('Remove File')
         self.buttonRemoveFile.clicked.connect(self.RemovePath)
-        layout.addWidget(self.buttonRemoveFile)
-
         self.buttonRemoveAll = QPushButton('Empty List')
         self.buttonRemoveAll.clicked.connect(self.DelListItem)
-        layout.addWidget(self.buttonRemoveAll)
 
         #self.bntbar = QStatusBar(self)
         #self.bntbar.addPermanentWidget(self.buttonOpenFile, stretch=4)
@@ -157,12 +151,9 @@ class ListViewDemo(QWidget):
         # 建立選取影片列表
         self.listview = QListView()       
         self.listModel = QStringListModel()
-        #self.list = ["列表項1", "列表項2", "列表項3"]
-         #將數據放到空的模型內
-        #self.listModel.setStringList(self.list)
         self.listview.setModel(self.listModel)
         self.listview.setEditTriggers(QAbstractItemView.NoEditTriggers)
-        layout.addWidget(self.listview)
+        self.listview.setFixedHeight(200)
 
         # 選擇語言
         #self.combobox = QComboBox()
@@ -172,47 +163,41 @@ class ListViewDemo(QWidget):
         # 按鈕編輯影片
         self.buttonClip = QPushButton('Edit Video')
         self.buttonClip.clicked.connect(self.VideoEdit_launcher)
-        self.buttonClip.clicked.connect(self.SetLabel)
-<<<<<<< HEAD
-=======
-        #layout.addWidget(self.buttonClip)
-
->>>>>>> c326c1d8e276e501d855e392fa0f1e989d6b3d91
-
+        # self.buttonClip.clicked.connect(self.SetLabel)
         self.buttonSub = QPushButton('Generate Subtitle')
         self.buttonSub.clicked.connect(self.Gen_subtitle_popup)
-        #layout.addWidget(self.buttonSub)
-
         self.bnt2bar = QStatusBar(self)
         self.bnt2bar.addPermanentWidget(self.buttonClip, stretch=8)
         self.bnt2bar.addPermanentWidget(self.buttonSub, stretch=8)
-        layout.addWidget(self.bnt2bar)
 
-        self.statusLabel = QLabel()
-        self.statusLabel.setText("\nResult: None")
-
-        self.statusbar = QStatusBar(self)
-        layout.addWidget(self.statusbar)
-
-        self.progressBar = QProgressBar()
-        self.progressBar.setRange(0,100)
-        #layout.addWidget(self.progressBar)
-        self.statusbar.addWidget(self.statusLabel, stretch=8)
-        #self.statusbar.addPermanentWidget(self.progressBar, stretch=10)
+        # 處理狀態 UI
+        # self.statusLabel = QLabel()
+        # self.statusLabel.setText("\nResult: None")
+        # self.statusbar = QStatusBar(self)
+        # self.statusbar.addWidget(self.statusLabel, stretch=8)
         
-        # self.rst_list = QListView()       
-        # self.rst_model = QStringListModel()
-        # self.rst_list.setModel(self.rst_model)
+        # 處理狀態 UI
+        self.rst_label = QLabel()
+        self.rst_label.setText('\nResult:')
+        self.rst_list = QListView()       
+        self.rst_model = QStringListModel()
+        self.rst_list.setModel(self.rst_model)
         # self.rst_list.setFixedHeight(100)
-        # layout.addWidget(self.rst_list)
+        # self.rst_list.setEditTriggers(QAbstractItemView.NoEditTriggers)
+        # self.rst_bar = QStatusBar()
+        # self.rst_bar.addPermanentWidget(self.rst_label, stretch = 1)
+        # self.rst_bar.addPermanentWidget(self.rst_list, stretch=16)
 
-        # resulttext = QPlainTextEdit()
-        # resulttext.setReadOnly(True)
-        # layout.addWidget(resulttext)
-
-        self.workThread = WorkThread()
-        self.workThread.timer.connect(self.countTime)
+        layout.addWidget(self.buttonOpenFile)
+        layout.addWidget(self.buttonRemoveFile)
+        layout.addWidget(self.buttonRemoveAll)
+        layout.addWidget(self.listview)
+        layout.addWidget(self.bnt2bar)
+        layout.addWidget(self.rst_label)
+        layout.addWidget(self.rst_list)
         self.setLayout(layout)
+        # self.workThread = WorkThread()
+        # self.workThread.timer.connect(self.countTime)
 
     def countTime(self):
         global sec
@@ -223,7 +208,6 @@ class ListViewDemo(QWidget):
     def work(self):
         self.workThread.start() 
       
-
     def LoadPath(self):
         fname,_ = QFileDialog.getOpenFileName(self, '打開文件', '.', '文件(*.MOV *.mp4)')
         if len(fname) != 0 :
@@ -245,39 +229,44 @@ class ListViewDemo(QWidget):
         for i in range(row1):
             self.listModel.removeRow(self.listview.modelColumn())
 
+    def Export_msg_to_mdl(self, model, msg, src=None, withtime = True):
+        row = model.rowCount()
+        model.insertRow(row)
+        index = model.index(row, 0)
+        current_time = time.strftime("%H:%M:%S", time.localtime())
+        print(msg)
+        if withtime:
+            model.setData(index, "{:<12}{:<13}{}".format(current_time, msg, src)) 
+        else:
+            model.setData(index, "{}".format(msg))
+
     def SetLabel(self, progress_callback):
         row = self.listModel.rowCount()
         if row == 0:
             QMessageBox.information(self,'Message','Please selected file first', QMessageBox.Ok)
             return
         
-        self.statusLabel.setText('\nResult: processing your file...')
-        QMessageBox.information(self,'Message','Your file is being processed',QMessageBox.Ok)
         self.buttonClip.setDisabled(True)
+        # self.Export_msg_to_mdl(self.rst_model, 'Processing: ' + self.listModel.stringList()[row])
+        # QMessageBox.information(self,'Message','Your file is being processed',QMessageBox.Ok)
                 
     def VideoEdit_launcher(self):
+        row = self.listModel.rowCount()
+        if row == 0:
+            QMessageBox.information(self,'Message','Please selected file first', QMessageBox.Ok)
+            return
+
+        self.buttonClip.setDisabled(True)
         video_edit_wkr = Worker(self.VideoEdit)
         video_edit_wkr.setAutoDelete(True)
         self.thd_pool.start(video_edit_wkr)
-        
-<<<<<<< HEAD
-        # set_label_wkr = Worker(self.SetLabel)
-        # set_label_wkr.setAutoDelete(True)
-        # self.thd_pool.start(set_label_wkr)
-=======
-
-    def status_lable(self):
-        set_label_wkr = Worker(self.SetLabel)
-        set_label_wkr.setAutoDelete(True)
-        self.thd_pool.start(set_label_wkr)
->>>>>>> c326c1d8e276e501d855e392fa0f1e989d6b3d91
 
     def VideoEdit(self, progress_callback):
         # mp4 轉成 wav -----------------------------
         #inputfile = "media/tainanvlog.mp4"
         rowCount = self.listModel.rowCount()
         for row in range(rowCount):   
-            self.statusLabel.setText('\nResult: loading your file...')
+            self.Export_msg_to_mdl(self.rst_model, "Loading:", self.listModel.stringList()[row])
             source_file = self.listModel.stringList()[row]
             slash_pos = source_file.rfind('/')
             dot_pos = source_file.rfind('.')
@@ -296,7 +285,7 @@ class ListViewDemo(QWidget):
             clip.release()
 
             # 測試靜音 ----------------------------------
-            self.statusLabel.setText('\nResult: detecting voice instructions...')
+            self.Export_msg_to_mdl(self.rst_model, "Detecting:", self.listModel.stringList()[row])
             # split returns a generator of AudioRegion objects
             # sound = AudioSegment.from_file(wavfile, format="wav") 
             audio_regions = auditok.split(
@@ -371,8 +360,7 @@ class ListViewDemo(QWidget):
 
                                     
             # 轉灰階--------------------------------------
-            self.statusLabel.setText('\nResult: cropping the video...')
-
+            self.Export_msg_to_mdl(self.rst_model, "Cropping:", self.listModel.stringList()[row])
             for i in range(0,len(ins_loca)-1,2):
                 grayclip = VideoFileClip(source_file).subclip(round(ins_loca[i],2),round(ins_loca[i+1],2))
                 gray_scalar = []
@@ -419,22 +407,19 @@ class ListViewDemo(QWidget):
                     #print("subclip(",subclip_sec[i],", ",subclip_sec[i+1],")")  
                 clips.append(clip)
             print ('sub: ', clips)
+            self.Export_msg_to_mdl(self.rst_model, "Exporting:", outfile)
             final_clip = concatenate_videoclips(clips)
             final_clip.write_videofile(outfile)
             final_clip.close()
 
             index = self.listModel.index(row, 0)
             self.listModel.setData(index, outfile) 
-            self.statusLabel.setText('\nResult: File exported done')
+            self.Export_msg_to_mdl(self.rst_model, "Done:", outfile)
             
-            vlc = "/Applications/VLC.app/Contents/MacOS/VLC"
-            p1 =subprocess.run ([''+vlc+'', ''+outfile+'',  'vlc://quit'])
-            print(p1)
+            # vlc = "/Applications/VLC.app/Contents/MacOS/VLC"
+            # p1 =subprocess.run ([''+vlc+'', ''+outfile+'',  'vlc://quit'])
+            # print(p1)
 
-            '''
-            ListViewDemo.DelListItem(self)
-            self.buttonClip.setEnabled(True)
-            '''
     def Gen_subtitle_popup(self):
         if self.listModel.rowCount() <= 0:
             QMessageBox.information(self,'Message','Please selected file first', QMessageBox.Ok)
@@ -595,7 +580,6 @@ class Gen_subtitle_popup(QDialog):
         dot_pos = srcfile.rfind('.')
         return srcfile[:slash_pos+1], srcfile[slash_pos+1:dot_pos], srcfile[dot_pos:]
 
-
     def GetSubtitle(self, srcfile, blank=True):
         src_path, src_name, src_format = self.GetSrcArg(srcfile)
 
@@ -747,7 +731,7 @@ class Gen_subtitle_popup(QDialog):
 
 if __name__ == "__main__" :
     app = QApplication(sys.argv)
-    app.setWindowIcon(QIcon('./resources/1179069.png'))
-    win = ListViewDemo()
+    app.setWindowIcon(QIcon('./resources/icon.png'))
+    win = Edit_videos_windows()
     win.show()
     sys.exit(app.exec_())
