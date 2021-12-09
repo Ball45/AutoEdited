@@ -473,7 +473,7 @@ class Gen_subtitle_popup(QDialog):
             index = self.src_listmodel.index(row,0)  
             self.src_listmodel.setData(index, src) 
 
-        self.src_listview.setFixedHeight(20 * len(self.src_list))
+        self.src_listview.setFixedHeight(25 * len(self.src_list))
         self.src_listview.setCurrentIndex(self.src_listmodel.index(0,0))
         
 
@@ -739,7 +739,7 @@ class Gen_subtitle_popup(QDialog):
 
 if __name__ == "__main__" :
     app = QApplication(sys.argv)
-    app.setWindowIcon(QIcon('PyQt5/resources/firefox-icon-02.png'))
+    app.setWindowIcon(QIcon('PyQt5/resources/1179069.png'))
     win = ListViewDemo()
     win.show()
     sys.exit(app.exec_())
