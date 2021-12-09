@@ -581,10 +581,6 @@ class Gen_subtitle_popup(QDialog):
                     while self.thd_pool.maxThreadCount() <= self.thd_pool.activeThreadCount(): pass
                     self.thd_pool.start(audio2txt_wkr)
 
-                # print('flag')
-                # for i in self.subtitle_dict[row].list:
-                #     print(i.time_start, i.time_end, i.string)
-
             while 2 < self.thd_pool.activeThreadCount(): pass
             self.subtitle_dict[row].Optimize_length()
             self.subtitle_dict[row].Add_blank()
@@ -632,85 +628,6 @@ class Gen_subtitle_popup(QDialog):
                 print("IOError; {0}".format(e))
 
         return
-
-    def SetupSubtitleAndTable_launcher(self, progress_callback):
-        for row in range(self.src_listmodel.rowCount()):
-            self.SetupSubtitleAndTable(modelIndex=row)
-
-    def SetupSubtitleAndTable(self, modelIndex, progress_callback):
-        if not type(modelIndex) == str:
-            modelIndex = str(modelIndex + 1)
-
-        self.subtitle_dict[modelIndex] = self.GetSubtitle(self.src_list[int(modelIndex) - 1])
-        if modelIndex not in self.adjust_model_dict:
-            self.adjust_model_dict[modelIndex] = QStandardItemModel(0, 3)
-            self.adjust_model_dict[modelIndex].setHorizontalHeaderLabels(['Time start', 'Time end', 'Subtitle'])
-
-        for row in range(len(self.subtitle_dict[modelIndex])):
-            item1 = QStandardItem("{}".format(self.subtitle_dict[modelIndex][row].time_start))
-            item2 = QStandardItem("{}".format(self.subtitle_dict[modelIndex][row].time_end))
-            item3 = QStandardItem("{}".format(self.subtitle_dict[modelIndex][row].string.rstrip('\n')))
-                
-            self.adjust_model_dict[modelIndex].appendRow([item1, item2, item3])
-
-    def GetSubtitle(self, srcfile, blank=True):
-        src_path, src_name, src_format = self.GetSrcArg(srcfile)
-        sub_list = []
-        if os.path.exists(src_path + src_name + '.srt'):
-            file = open(src_path + src_name + '.srt', encoding='utf-8')
-            sub_file = file.readlines()
-            file.close()
-
-            for line in range(0, len(sub_file), 4):
-                string = sub_file[line + 2]
-                pos = sub_file[line + 1].find('-')
-                time_start, time_end = sub_file[line + 1][:pos-1], sub_file[line+1][pos+4:]
-                sub_list.append(Subtitle(time_start, time_end, string))
-        else:
-            if not os.path.exists(src_path + 'wav/'):
-                os.mkdir(src_path + 'wav/')
-
-            src_path += 'wav/'
-            if not os.path.exists(src_path + src_name + '.wav'):
-                os.system("ffmpeg -i "+srcfile+" "+src_path + src_name + '.wav')
-
-            audiofile = src_path + src_name+'.wav'
-            audio_regions = auditok.split(
-                audiofile,
-                min_dur=0.01,        # minimum duration of a valid audio event in seconds
-                max_dur=100,        # maximum duration of an event
-                max_silence=0.3,      # maximum duration of tolerated continuous silence within an event
-                energy_threshold=60  # threshold of detection
-            )
-
-            subtitle_list = []
-            rst_list = []
-            for i, r in enumerate(audio_regions):
-                print("Region {i}: {r.meta.start:.3f}s -- {r.meta.end:.3f}s".format(i=i, r=r))
-                filename = r.save(src_path + "region_{meta.start:.3f}-{meta.end:.3f}.wav")
-                start, end = "{r.meta.start:.3f}".format(r=r), "{r.meta.end:.3f}".format(r=r)
-                text = self.AudioToText(filename)
-                subtitle_list.append(Subtitle(start, end, text))
-
-            i = 0
-            while i < len(subtitle_list) - 1:
-                if subtitle_list[i].time_end < subtitle_list[i+1].time_start:
-                    time_start = subtitle_list[i].time_end
-                    time_end = subtitle_list[i+1].time_start
-                    subtitle_list.insert(i+1, Subtitle(time_start, time_end))
-                    i += 1
-
-                i += 1
-
-        if blank:
-            # handling subtitle go out of screen
-            for index in range(len(subtitle_list)):
-                if 25 < len(subtitle_list[index].string):
-                    former, latter = subtitle_list[index].split()
-                    subtitle_list[index] = former
-                    subtitle_list.insert(index+1, latter)
-
-        return subtitle_list
 
     def ChangeBtnState(self, chkbox, btn):
         if chkbox.isChecked() == True:
