@@ -483,7 +483,7 @@ class Gen_subtitle_popup(QDialog):
             index = self.src_listmodel.index(row,0)  
             self.src_listmodel.setData(index, src) 
 
-        self.src_listview.setFixedHeight(20 * len(self.src_list))
+        self.src_listview.setFixedHeight(25 * len(self.src_list))
         self.src_listview.setCurrentIndex(self.src_listmodel.index(0,0))
         
 
@@ -818,7 +818,7 @@ class Gen_subtitle_popup(QDialog):
 
 if __name__ == "__main__" :
     app = QApplication(sys.argv)
-    app.setWindowIcon(QIcon('./resources/icon.png'))
+    app.setWindowIcon(QIcon('PyQt5/resources/icon.png'))
     win = Edit_videos_windows()
     win.show()
     sys.exit(app.exec_())
