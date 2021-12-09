@@ -122,9 +122,9 @@ class WorkThread(QThread):
                 break;
             self.timer.emit()  # 發送timer信號
 
-class ListViewDemo(QWidget):
+class Edit_videos_windows(QWidget):
     def __init__(self, parent = None):
-        super(ListViewDemo, self).__init__(parent)
+        super(Edit_videos_windows, self).__init__(parent)
         self.thd_pool = QThreadPool()
         self.setWindowTitle('智慧影音接軌')
         self.resize(600,500)
@@ -137,16 +137,10 @@ class ListViewDemo(QWidget):
         # 按鈕選擇檔案
         self.buttonOpenFile = QPushButton('Select File')
         self.buttonOpenFile.clicked.connect(self.LoadPath) 
-        layout.addWidget(self.buttonOpenFile)
-
-        # 按鈕移除檔案
         self.buttonRemoveFile = QPushButton('Remove File')
         self.buttonRemoveFile.clicked.connect(self.RemovePath)
-        layout.addWidget(self.buttonRemoveFile)
-
         self.buttonRemoveAll = QPushButton('Empty List')
         self.buttonRemoveAll.clicked.connect(self.DelListItem)
-        layout.addWidget(self.buttonRemoveAll)
 
         #self.bntbar = QStatusBar(self)
         #self.bntbar.addPermanentWidget(self.buttonOpenFile, stretch=4)
@@ -157,12 +151,9 @@ class ListViewDemo(QWidget):
         # 建立選取影片列表
         self.listview = QListView()       
         self.listModel = QStringListModel()
-        #self.list = ["列表項1", "列表項2", "列表項3"]
-         #將數據放到空的模型內
-        #self.listModel.setStringList(self.list)
         self.listview.setModel(self.listModel)
         self.listview.setEditTriggers(QAbstractItemView.NoEditTriggers)
-        layout.addWidget(self.listview)
+        self.listview.setFixedHeight(200)
 
         # 選擇語言
         #self.combobox = QComboBox()
@@ -172,42 +163,40 @@ class ListViewDemo(QWidget):
         # 按鈕編輯影片
         self.buttonClip = QPushButton('Edit Video')
         self.buttonClip.clicked.connect(self.VideoEdit_launcher)
-        self.buttonClip.clicked.connect(self.SetLabel)
-
         self.buttonSub = QPushButton('Generate Subtitle')
         self.buttonSub.clicked.connect(self.Gen_subtitle_popup)
-        #layout.addWidget(self.buttonSub)
-
         self.bnt2bar = QStatusBar(self)
         self.bnt2bar.addPermanentWidget(self.buttonClip, stretch=8)
         self.bnt2bar.addPermanentWidget(self.buttonSub, stretch=8)
-        layout.addWidget(self.bnt2bar)
 
-        self.statusLabel = QLabel()
-        self.statusLabel.setText("\nResult: None")
-
-        self.statusbar = QStatusBar(self)
-        layout.addWidget(self.statusbar)
-
-        self.progressBar = QProgressBar()
-        self.progressBar.setRange(0,100)
-        #layout.addWidget(self.progressBar)
-        self.statusbar.addWidget(self.statusLabel, stretch=8)
-        #self.statusbar.addPermanentWidget(self.progressBar, stretch=10)
+        # 處理狀態 UI
+        # self.statusLabel = QLabel()
+        # self.statusLabel.setText("\nResult: None")
+        # self.statusbar = QStatusBar(self)
+        # self.statusbar.addWidget(self.statusLabel, stretch=8)
         
-        # self.rst_list = QListView()       
-        # self.rst_model = QStringListModel()
-        # self.rst_list.setModel(self.rst_model)
+        # 處理狀態 UI
+        self.rst_label = QLabel()
+        self.rst_label.setText('\nResult:')
+        self.rst_list = QListView()       
+        self.rst_model = QStringListModel()
+        self.rst_list.setModel(self.rst_model)
         # self.rst_list.setFixedHeight(100)
-        # layout.addWidget(self.rst_list)
+        self.rst_list.setEditTriggers(QAbstractItemView.NoEditTriggers)
+        # self.rst_bar = QStatusBar()
+        # self.rst_bar.addPermanentWidget(self.rst_label, stretch = 1)
+        # self.rst_bar.addPermanentWidget(self.rst_list, stretch=16)
 
-        # resulttext = QPlainTextEdit()
-        # resulttext.setReadOnly(True)
-        # layout.addWidget(resulttext)
-
-        self.workThread = WorkThread()
-        self.workThread.timer.connect(self.countTime)
+        layout.addWidget(self.buttonOpenFile)
+        layout.addWidget(self.buttonRemoveFile)
+        layout.addWidget(self.buttonRemoveAll)
+        layout.addWidget(self.listview)
+        layout.addWidget(self.bnt2bar)
+        layout.addWidget(self.rst_label)
+        layout.addWidget(self.rst_list)
         self.setLayout(layout)
+        # self.workThread = WorkThread()
+        # self.workThread.timer.connect(self.countTime)
 
     def countTime(self):
         global sec
@@ -218,7 +207,6 @@ class ListViewDemo(QWidget):
     def work(self):
         self.workThread.start() 
       
-
     def LoadPath(self):
         fname,_ = QFileDialog.getOpenFileName(self, '打開文件', '.', '文件(*.MOV *.mp4)')
         if len(fname) != 0 :
@@ -240,193 +228,210 @@ class ListViewDemo(QWidget):
         for i in range(row1):
             self.listModel.removeRow(self.listview.modelColumn())
 
+    def Export_msg_to_mdl(self, model, msg, src=None, withtime = True):
+        # row = model.rowCount()
+        model.insertRow(0)
+        index = model.index(0, 0)
+        current_time = time.strftime("%H:%M:%S", time.localtime())
+        print(msg)
+        if withtime:
+            model.setData(index, "{:<12}{:<13}{}".format(current_time, msg, src)) 
+        else:
+            model.setData(index, "{}".format(msg))
+
     def SetLabel(self, progress_callback):
         row = self.listModel.rowCount()
         if row == 0:
             QMessageBox.information(self,'Message','Please selected file first', QMessageBox.Ok)
             return
         
-        self.statusLabel.setText('\nResult: processing your file...')
-        QMessageBox.information(self,'Message','Your file is being processed',QMessageBox.Ok)
         self.buttonClip.setDisabled(True)
+        # self.Export_msg_to_mdl(self.rst_model, 'Processing: ' + self.listModel.stringList()[row])
+        # QMessageBox.information(self,'Message','Your file is being processed',QMessageBox.Ok)
                 
     def VideoEdit_launcher(self):
-        video_edit_wkr = Worker(self.VideoEdit)
-        video_edit_wkr.setAutoDelete(True)
-        self.thd_pool.start(video_edit_wkr)
+        rows = self.listModel.rowCount()
+        if rows == 0:
+            QMessageBox.information(self,'Message','Please selected file first', QMessageBox.Ok)
+            return
+
+        self.buttonClip.setDisabled(True)
+        self.buttonSub.setDisabled(True)
+        for row in range(rows):
+            src_path, src_name, src_format = self.GetSrcArg(self.listModel.stringList()[row])
+            video_edit_wkr = Worker(self.VideoEdit, src_path, src_name, src_format)
+            video_edit_wkr.setAutoDelete(True)
+            self.thd_pool.start(video_edit_wkr)
+
+        ChaneBtnState_wkr = Worker(self.ChaneBtnState_waitpool)
+        ChaneBtnState_wkr.setAutoDelete(True)
+        self.thd_pool.start(ChaneBtnState_wkr)
+
+    def ChaneBtnState_waitpool(self, progress_callback):
+        while 1 < self.thd_pool.activeThreadCount():
+            pass
         
-        # set_label_wkr = Worker(self.SetLabel)
-        # set_label_wkr.setAutoDelete(True)
-        # self.thd_pool.start(set_label_wkr)
+        self.buttonSub.setEnabled(True)
 
-    def status_lable(self):
-        set_label_wkr = Worker(self.SetLabel)
-        set_label_wkr.setAutoDelete(True)
-        self.thd_pool.start(set_label_wkr)
+    def VideoEdit(self, src_path, src_name, src_format, progress_callback):
+        srcfile = src_path + src_name + src_format
+        wavfile = src_path + src_name + '.wav'     # 執行完刪除 *wav
+        outfile = src_path + src_name + '_edited.mp4' # 把檔案存在自己想要的地方
+        self.Export_msg_to_mdl(self.rst_model, "Loading :", src_name + src_format)
 
-    def VideoEdit(self, progress_callback):
-        # mp4 轉成 wav -----------------------------
-        #inputfile = "media/tainanvlog.mp4"
-        rowCount = self.listModel.rowCount()
-        for row in range(rowCount):   
-            self.statusLabel.setText('\nResult: loading your file...')
-            source_file = self.listModel.stringList()[row]
-            slash_pos = source_file.rfind('/')
-            dot_pos = source_file.rfind('.')
-            source_path, source_name, source_format = source_file[:slash_pos+1], source_file[slash_pos+1:dot_pos], source_file[dot_pos:]
-            wavfile = source_path + source_name + '.wav'     # 執行完刪除 *wav
-            outfile = source_path + source_name + '_edited.mp4' # 把檔案存在自己想要的地方
-            
+        if not os.path.exists(wavfile):
+            os.system("ffmpeg -i " + srcfile + " " + src_path + src_name + '.wav')
 
-            if not os.path.exists(wavfile):
-                os.system("ffmpeg -i "+source_file+" "+source_path + source_name + '.wav')
+        # 找出fps---------------------------------------
+        clip = cv2.VideoCapture(srcfile)
+        fps = clip.get(cv2.CAP_PROP_FPS)
+        fps = round(fps,)       
+        clip.release()
 
-            # 找出fps---------------------------------------
-            clip = cv2.VideoCapture(source_file)
-            fps = clip.get(cv2.CAP_PROP_FPS)
-            fps = round(fps,)       
-            clip.release()
+        # 測試靜音 ----------------------------------
+        self.Export_msg_to_mdl(self.rst_model, "Detecting :", src_name + src_format)
+        # split returns a generator of AudioRegion objects
+        # sound = AudioSegment.from_file(wavfile, format="wav") 
+        audio_regions = auditok.split(
+            wavfile,
+            min_dur=0.2,         # minimum duration of a valid audio event in seconds
+            max_dur=100,         # maximum duration of an event
+            max_silence=2,       # maximum duration of tolerated continuous silence within an event
+            energy_threshold=50  # threshold of detection
+        )
 
-            # 測試靜音 ----------------------------------
-            self.statusLabel.setText('\nResult: detecting voice instructions...')
-            # split returns a generator of AudioRegion objects
-            # sound = AudioSegment.from_file(wavfile, format="wav") 
-            audio_regions = auditok.split(
-                wavfile,
-                min_dur=0.2,         # minimum duration of a valid audio event in seconds
-                max_dur=100,         # maximum duration of an event
-                max_silence=2,       # maximum duration of tolerated continuous silence within an event
-                energy_threshold=50  # threshold of detection
-            )
+        record_start = np.zeros(1000)
+        record_end = np.zeros(1000)
+        silence_duration = np.zeros(1000)
+        speech_duration = np.zeros(1000)
+        num = 0
+        ins_loca=[]
+        subclip_sec=[]
 
-            record_start = np.zeros(1000)
-            record_end = np.zeros(1000)
-            silence_duration = np.zeros(1000)
-            speech_duration = np.zeros(1000)
-            num = 0
-            ins_loca=[]
-            subclip_sec=[]
+        for i, r in enumerate(audio_regions):
+            record_start[i] = r.meta.start
+            record_end[i] = r.meta.end
+            num = num+1
 
-            for i, r in enumerate(audio_regions):
-                record_start[i] = r.meta.start
-                record_end[i] = r.meta.end
-                num = num+1
+        for j in range(num-1):
+            # evaluate silence section length
+            silence_duration[j] = record_start[j+1] - record_end[j]
+            print("Silence ", j, " :", round(record_end[j], 3), 's', 'to', round(record_start[j+1], 3), 's, Duration : ', round(silence_duration[j],3))
 
-            for j in range(num-1):
-                # evaluate silence section length
-                silence_duration[j] = record_start[j+1] - record_end[j]
-                print("Silence ", j, " :", round(record_end[j], 3), 's', 'to', round(record_start[j+1], 3), 's, Duration : ', round(silence_duration[j],3))
+            # if there are two continuous silence sections >2.5 
+            if silence_duration[j-1] > 1.4 and silence_duration[j] > 1.4 and speech_duration[j] < 5.0:
+                #print("instruction : ", round(record_start[j], 3), 's', 'to', round(record_end[j], 3), 's')
 
-                # if there are two continuous silence sections >2.5 
-                if silence_duration[j-1] > 1.4 and silence_duration[j] > 1.4 and speech_duration[j] < 5.0:
-                    #print("instruction : ", round(record_start[j], 3), 's', 'to', round(record_end[j], 3), 's')
+        # 辨識是否為語音指令“剪接” ---------------------------
+                r = sr.Recognizer()
+                instruction = sr.AudioFile(wavfile)
+                with instruction as source:
+                    audio = r.record(source, offset = record_start[j], duration = 5)
+                try:
+                    ins = r.recognize_google(audio_data=audio, key=None,language="zh-TW", show_all=True)
+                    if "剪接" in str(ins):
+                        print("instruction ", round(record_start[j], 3), 's to', round(record_end[j], 3), 's'," : 剪接")      
 
-            # 辨識是否為語音指令“剪接” ---------------------------
-                    r = sr.Recognizer()
-                    instruction = sr.AudioFile(wavfile)
-                    with instruction as source:
-                        audio = r.record(source, offset = record_start[j], duration = 5)
-                    try:
-                        ins = r.recognize_google(audio_data=audio, key=None,language="zh-TW", show_all=True)
-                        if "剪接" in str(ins):
-                            print("instruction ", round(record_start[j], 3), 's to', round(record_end[j], 3), 's'," : 剪接")      
-
-                            # 抓影片前5秒進行辨識
-                            before_ins_end = int(record_end[j-1])      #指令前的結束時間
-                            if (before_ins_end-5) < 0 :
-                                before_ins_start=0
-                                sec = float(before_ins_end)
-                            else :
-                                before_ins_start = before_ins_end-5    #指令前的起始時間
-                                sec = 5
-                            
-                            after_ins_start = float(record_start[j+1]) # 指令後的起始時間
-                            print('往前抓＿秒進行辨識:',sec)
-                                    
-                            ins_loca.append(float(before_ins_start))
-                            ins_loca.append(float(after_ins_start))
+                        # 抓影片前5秒進行辨識
+                        before_ins_end = int(record_end[j-1])      #指令前的結束時間
+                        if (before_ins_end-5) < 0 :
+                            before_ins_start=0
+                            sec = float(before_ins_end)
+                        else :
+                            before_ins_start = before_ins_end-5    #指令前的起始時間
+                            sec = 5
                         
-                        else:
-                            print(ins,'pass')
-                            pass
+                        after_ins_start = float(record_start[j+1]) # 指令後的起始時間
+                        print('往前抓＿秒進行辨識:',sec)
+                                
+                        ins_loca.append(float(before_ins_start))
+                        ins_loca.append(float(after_ins_start))
                     
-                    except sr.UnknownValueError:   
-                        ins = "無法翻譯"
-                    except sr.RequestError as e:
-                        ins = "無法翻譯{0}".format(e)
-                            
-            for i in range(1,len(ins_loca)-1,2):
-                if ins[i]> ins[i+1]:
-                    del ins[i]
-                    del ins[i+1]
-            print('ins:',ins_loca)
-
-                                    
-            # 轉灰階--------------------------------------
-            self.statusLabel.setText('\nResult: cropping the video...')
-
-            for i in range(0,len(ins_loca)-1,2):
-                grayclip = VideoFileClip(source_file).subclip(round(ins_loca[i],2),round(ins_loca[i+1],2))
-                gray_scalar = []
-                for frames in grayclip.iter_frames():
-                    gray = cv2.cvtColor(frames, cv2.COLOR_BGR2GRAY)
-                    #cv2.imshow("gray", gray) #播放灰階影片
-                    gray_scalar.append(gray)
-                    key = cv2.waitKey(1)
-                    if key == ord("q"):
-                        break;
-                print('轉灰階成功clip :', round(before_ins_start,2),'s - ', round(after_ins_start,2),'s ')        
-                #print(len(gray_scalar))
-            
-            # 偵測重複 ----------------------------------
-                min = 100000000000
+                    else:
+                        print(ins,'pass')
+                        pass
                 
-                for i in range(sec*fps):
-                    before_ins = gray_scalar[i]
-                    after_ins = gray_scalar[len(gray_scalar)-1]
-                    
-                    d = (before_ins-after_ins)**2
-                    
-                    if min > d.sum():
-                        cutpoint = (before_ins_start*fps+i)/fps 
-                        min = d.sum()
-                    #print('t : ', round(before_ins_start*fps+i+j, 1)/fps,' ', d.sum())          
-                #輸出最相近
-                print(cutpoint, min)
-                subclip_sec.append(float(cutpoint))
-                subclip_sec.append(float(after_ins_start))
+                except sr.UnknownValueError:   
+                    ins = "無法翻譯"
+                except sr.RequestError as e:
+                    ins = "無法翻譯{0}".format(e)
+                        
+        for i in range(1,len(ins_loca)-1,2):
+            if ins[i]> ins[i+1]:
+                del ins[i]
+                del ins[i+1]
+        print('ins:',ins_loca)
 
-            subclip_sec.insert(0, 0)
-            subclip_sec.append(' ')
-            print('subclip[(from_t, to_t)]:',subclip_sec)
-
-            # 剪接 -------------------------------------
-            clips = []
-            for i in range(0,len(subclip_sec),2):
-                if i == (len(subclip_sec)-2):
-                    clip = VideoFileClip(source_file).subclip(subclip_sec[i], )
-                    #print("subclip(",subclip_sec[i],", )")  
-                else:
-                    clip = VideoFileClip(source_file).subclip(subclip_sec[i], subclip_sec[i+1])
-                    #print("subclip(",subclip_sec[i],", ",subclip_sec[i+1],")")  
-                clips.append(clip)
-            print ('sub: ', clips)
-            final_clip = concatenate_videoclips(clips)
-            final_clip.write_videofile(outfile)
-            final_clip.close()
-
-            index = self.listModel.index(row, 0)
-            self.listModel.setData(index, outfile) 
-            self.statusLabel.setText('\nResult: File exported done')
+                                
+        # 轉灰階--------------------------------------
+        self.Export_msg_to_mdl(self.rst_model, "Comparing :", src_name + src_format)
+        for i in range(0,len(ins_loca)-1,2):
+            grayclip = VideoFileClip(srcfile).subclip(round(ins_loca[i],2),round(ins_loca[i+1],2))
+            gray_scalar = []
+            for frames in grayclip.iter_frames():
+                gray = cv2.cvtColor(frames, cv2.COLOR_BGR2GRAY)
+                #cv2.imshow("gray", gray) #播放灰階影片
+                gray_scalar.append(gray)
+                key = cv2.waitKey(1)
+                if key == ord("q"):
+                    break;
+            print('轉灰階成功clip :', round(before_ins_start,2),'s - ', round(after_ins_start,2),'s ')        
+            #print(len(gray_scalar))
+        
+        # 偵測重複 ----------------------------------
+            min = 100000000000
             
-            vlc = "/Applications/VLC.app/Contents/MacOS/VLC"
-            p1 =subprocess.run ([''+vlc+'', ''+outfile+'',  'vlc://quit'])
-            print(p1)
+            for i in range(sec*fps):
+                before_ins = gray_scalar[i]
+                after_ins = gray_scalar[len(gray_scalar)-1]
+                
+                d = (before_ins-after_ins)**2
+                
+                if min > d.sum():
+                    cutpoint = (before_ins_start*fps+i)/fps 
+                    min = d.sum()
+                #print('t : ', round(before_ins_start*fps+i+j, 1)/fps,' ', d.sum())          
+            #輸出最相近
+            print(cutpoint, min)
+            subclip_sec.append(float(cutpoint))
+            subclip_sec.append(float(after_ins_start))
 
-            '''
-            ListViewDemo.DelListItem(self)
-            self.buttonClip.setEnabled(True)
-            '''
+        subclip_sec.insert(0, 0)
+        subclip_sec.append(' ')
+        print('subclip[(from_t, to_t)]:',subclip_sec)
+
+        # 剪接 -------------------------------------
+        self.Export_msg_to_mdl(self.rst_model, "Cropping :", src_name + src_format)
+        clips = []
+        for i in range(0,len(subclip_sec),2):
+            if i == (len(subclip_sec)-2):
+                clip = VideoFileClip(srcfile).subclip(subclip_sec[i], )
+                #print("subclip(",subclip_sec[i],", )")  
+            else:
+                clip = VideoFileClip(srcfile).subclip(subclip_sec[i], subclip_sec[i+1])
+                #print("subclip(",subclip_sec[i],", ",subclip_sec[i+1],")")  
+            clips.append(clip)
+        print ('sub: ', clips)
+        self.Export_msg_to_mdl(self.rst_model, "Exporting :", src_name + "_edited" + src_format)
+        final_clip = concatenate_videoclips(clips)
+        final_clip.write_videofile(outfile)
+        final_clip.close()
+        self.Export_msg_to_mdl(self.rst_model, "Done :", src_name + "_edited" + src_format)
+        for row in range(len(self.listModel.stringList())):
+            if srcfile == self.listModel.stringList()[row]:
+                index = self.listModel.index(row, 0)
+                self.listModel.setData(index, outfile) 
+                break
+            
+        # vlc = "/Applications/VLC.app/Contents/MacOS/VLC"
+        # p1 =subprocess.run ([''+vlc+'', ''+outfile+'',  'vlc://quit'])
+        # print(p1)
+
+    def GetSrcArg(self, srcfile):
+        slash_pos = srcfile.rfind('/')
+        dot_pos = srcfile.rfind('.')
+        return srcfile[:slash_pos+1], srcfile[slash_pos+1:dot_pos], srcfile[dot_pos:]
+
     def Gen_subtitle_popup(self):
         if self.listModel.rowCount() <= 0:
             QMessageBox.information(self,'Message','Please selected file first', QMessageBox.Ok)
@@ -451,7 +456,6 @@ class Gen_subtitle_popup(QDialog):
         self.src_cur_path, self.src_cur_name, self.src_cur_format = src_list[0][:slash_pos+1], src_list[0][slash_pos+1:dot_pos], src_list[0][dot_pos:]
         self.setWindowTitle('Generate Subtitle')
         self.resize(700, 550)
-        # self.rst_list = []
         self.initUI()
 
     def initUI(self):
@@ -531,7 +535,7 @@ class Gen_subtitle_popup(QDialog):
         for row in range(self.src_listmodel.rowCount()):
             self.SetupSubtitleAndTable(modelIndex=row)
 
-    def SetupSubtitleAndTable(self, modelIndex):
+    def SetupSubtitleAndTable(self, modelIndex, progress_callback):
         if not type(modelIndex) == str:
             modelIndex = str(modelIndex + 1)
 
@@ -586,7 +590,6 @@ class Gen_subtitle_popup(QDialog):
         slash_pos = srcfile.rfind('/')
         dot_pos = srcfile.rfind('.')
         return srcfile[:slash_pos+1], srcfile[slash_pos+1:dot_pos], srcfile[dot_pos:]
-
 
     def GetSubtitle(self, srcfile, blank=True):
         src_path, src_name, src_format = self.GetSrcArg(srcfile)
@@ -739,7 +742,7 @@ class Gen_subtitle_popup(QDialog):
 
 if __name__ == "__main__" :
     app = QApplication(sys.argv)
-    app.setWindowIcon(QIcon('PyQt5/resources/1179069.png'))
-    win = ListViewDemo()
+    app.setWindowIcon(QIcon('PyQt5/resources/icon.png'))
+    win = Edit_videos_windows()
     win.show()
     sys.exit(app.exec_())
