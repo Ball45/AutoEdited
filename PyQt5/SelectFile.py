@@ -40,6 +40,28 @@ class Subtitle:
         
         return str(rh).zfill(2) + ':' + str(rm).zfill(2) + ':' + str(rs).zfill(2) + ',' + '000'
 
+class Subtitle_list:
+    def __init__(self):
+        self.list = []
+
+    def Add_blank(self):
+        i = 0
+        while i < len(self.list) - 1:
+            if self.list[i].time_end < self.list[i+1].time_start:
+                time_start = self.list[i].time_end
+                time_end = self.list[i+1].time_start
+                self.list.insert(i+1, Subtitle(time_start, time_end))
+                i += 1
+
+            i += 1
+
+    def Optimize_length(self):
+        for index in range(len(self.list)):
+            if 25 < len(self.list[index].string):
+                former, latter = self.list[index].split()
+                self.list[index] = former
+                self.list.insert(index+1, latter)
+
 class WorkerSignals(QObject):
     '''
     Defines the signals available from a running worker thread.
@@ -111,16 +133,16 @@ class Worker(QRunnable):
 
 sec = 0
 
-class WorkThread(QThread):
-    timer = pyqtSignal() # 每隔一秒發送一次信號
-    end = pyqtSignal()   # 技術完成後發送一次信號
-    def run(self):
-        while True:
-            self.sleep(1) # 休眠一秒
-            if sec == 100:
-                self.end.emit() # 發送end信號
-                break;
-            self.timer.emit()  # 發送timer信號
+# class WorkThread(QThread):
+#     timer = pyqtSignal() # 每隔一秒發送一次信號
+#     end = pyqtSignal()   # 技術完成後發送一次信號
+#     def run(self):
+#         while True:
+#             self.sleep(1) # 休眠一秒
+#             if sec == 100:
+#                 self.end.emit() # 發送end信號
+#                 break;
+#             self.timer.emit()  # 發送timer信號
 
 class Edit_videos_windows(QWidget):
     def __init__(self, parent = None):
@@ -141,12 +163,6 @@ class Edit_videos_windows(QWidget):
         self.buttonRemoveFile.clicked.connect(self.RemovePath)
         self.buttonRemoveAll = QPushButton('Empty List')
         self.buttonRemoveAll.clicked.connect(self.DelListItem)
-
-        #self.bntbar = QStatusBar(self)
-        #self.bntbar.addPermanentWidget(self.buttonOpenFile, stretch=4)
-        #self.bntbar.addPermanentWidget(self.buttonRemoveFile, stretch=4)
-        #self.bntbar.addPermanentWidget(self.buttonRemoveAll, stretch=4)
-        #layout.addWidget(self.bntbar)
 
         # 建立選取影片列表
         self.listview = QListView()       
@@ -195,17 +211,6 @@ class Edit_videos_windows(QWidget):
         layout.addWidget(self.rst_label)
         layout.addWidget(self.rst_list)
         self.setLayout(layout)
-        # self.workThread = WorkThread()
-        # self.workThread.timer.connect(self.countTime)
-
-    def countTime(self):
-        global sec
-        sec += 1
-        self.statusLabel.setText(str(sec))
-        self.progressBar.setValue(sec)
-
-    def work(self):
-        self.workThread.start() 
       
     def LoadPath(self):
         fname,_ = QFileDialog.getOpenFileName(self, '打開文件', '.', '文件(*.MOV *.mp4)')
@@ -270,7 +275,7 @@ class Edit_videos_windows(QWidget):
     def ChaneBtnState_waitpool(self, progress_callback):
         while 1 < self.thd_pool.activeThreadCount():
             pass
-        
+
         self.buttonSub.setEnabled(True)
 
     def VideoEdit(self, src_path, src_name, src_format, progress_callback):
@@ -450,6 +455,7 @@ class Gen_subtitle_popup(QDialog):
     def __init__(self, src_list):
         super().__init__()
         self.thd_pool = QThreadPool()
+        self.thd_pool.setMaxThreadCount(8)
         self.src_list = src_list
         slash_pos = src_list[0].rfind('/')
         dot_pos = src_list[0].rfind('.')
@@ -481,23 +487,26 @@ class Gen_subtitle_popup(QDialog):
         self.src_listview.setCurrentIndex(self.src_listmodel.index(0,0))
         
 
-        # prepare subtitle
+        # prepare subtitle & adjust box
         self.subtitle_dict = {} 
-
-        # adjust box
         self.adjust_table = QTableView()
         self.adjust_model_dict = {}
-        self.adjust_model_dict['1'] = QStandardItemModel(0, 3)
-        self.adjust_model_dict['1'].setHorizontalHeaderLabels(['Time start', 'Time end', 'Subtitle'])
-        self.adjust_table.setModel(self.adjust_model_dict['1'])
-        setup_table_launcher = Worker(self.SetupSubtitleAndTable_launcher)
-        setup_table_launcher.setAutoDelete(True)
-        self.thd_pool.start(setup_table_launcher)
+        for row in range(self.src_listmodel.rowCount()):
+            row = str(row + 1)                
+            self.adjust_model_dict[row] = QStandardItemModel(0, 3)
+            self.adjust_model_dict[row].setHorizontalHeaderLabels(['Time start', 'Time end', 'Subtitle'])
+            self.adjust_model_dict[row].itemChanged.connect(self.ModifyItem)
 
-        self.adjust_model_dict['1'].itemChanged.connect(self.ModifyItem)
+        subtitle_wkr = Worker(self.BuildupSubtitle)
+        subtitle_wkr.setAutoDelete(True)
+        self.thd_pool.start(subtitle_wkr)
+        table_wkr = Worker(self.BuildupTable)
+        table_wkr.setAutoDelete(True)
+        self.thd_pool.start(table_wkr)
+
         self.adjust_table.horizontalHeader().setStretchLastSection(True)
         self.adjust_table.setFixedHeight(300)
-        self.src_listview.selectionModel().currentChanged.connect(self.AdjustSubtitle)
+        self.src_listview.selectionModel().currentChanged.connect(lambda: self.RefreshTable(None))
 
         # Accept checkbox
         self.AcceptSubtitle_chkbox = QCheckBox('Accept subtitle preview')
@@ -531,6 +540,99 @@ class Gen_subtitle_popup(QDialog):
         layout.addWidget(self.rst_bar)
         self.setLayout(layout)
 
+    def BuildupSubtitle(self, progress_callback):
+        for row in range(self.src_listmodel.rowCount()):
+            row = str(row + 1)                
+            src_path, src_name, src_fmt = self.GetSrcArg(self.src_list[int(row) - 1])
+            self.subtitle_dict[row] = Subtitle_list()
+            if os.path.exists(src_path + src_name + '.srt'):
+                file = open(src_path + src_name + '.srt', encoding='utf-8')
+                sub_file = file.readlines()
+                file.close()
+
+                for line in range(0, len(sub_file), 4):
+                    string = sub_file[line + 2]
+                    pos = sub_file[line + 1].find('-')
+                    time_start, time_end = sub_file[line + 1][:pos-1], sub_file[line+1][pos+4:]
+                    self.subtitle_dict[row].list.append(Subtitle(time_start, time_end, string))
+            else:
+                src_path += 'wav/'
+                if not os.path.exists(src_path + src_name + '.wav'):
+                    if not os.path.exists(src_path):
+                        os.mkdir(src_path)
+                    
+                    os.system("ffmpeg -i " + self.src_list[int(row) - 1] + " " + src_path + src_name + '.wav')
+
+                audiofile = src_path + src_name+'.wav'
+                audio_region = auditok.split(
+                    audiofile,
+                    min_dur=0.01,        # minimum duration of a valid audio event in seconds
+                    max_dur=100,        # maximum duration of an event
+                    max_silence=0.3,      # maximum duration of tolerated continuous silence within an event
+                    energy_threshold=60  # threshold of detection
+                )
+
+                for i, r in enumerate(audio_region):
+                    filename = r.save(src_path + "region_{meta.start:.3f}-{meta.end:.3f}.wav")
+                    start, end = "{r.meta.start:.3f}".format(r=r), "{r.meta.end:.3f}".format(r=r)
+                    self.subtitle_dict[row].list.append(Subtitle(start, end, ' '))
+                    audio2txt_wkr = Worker(self.AudioToText, filename, row, len(self.subtitle_dict[row].list) - 1)
+                    audio2txt_wkr.setAutoDelete(True)
+                    while self.thd_pool.maxThreadCount() <= self.thd_pool.activeThreadCount(): pass
+                    self.thd_pool.start(audio2txt_wkr)
+
+                # print('flag')
+                # for i in self.subtitle_dict[row].list:
+                #     print(i.time_start, i.time_end, i.string)
+
+            while 2 < self.thd_pool.activeThreadCount(): pass
+            self.subtitle_dict[row].Optimize_length()
+            self.subtitle_dict[row].Add_blank()
+
+    def BuildupTable(self, progress_callback):
+        while 1 < self.thd_pool.activeThreadCount():
+            print(self.thd_pool.activeThreadCount())
+            try:
+                self.RefreshTable()
+
+            except: pass
+            time.sleep(0.2)
+        
+        self.RefreshTable()
+
+    def RefreshTable(self, row = None):
+        row = self.GetCurrentIndex() if row == None else row
+        row = str(row + 1)
+        for i in range(len(self.subtitle_dict[row].list)):
+            item1 = QStandardItem("{}".format(self.subtitle_dict[row].list[i].time_start))
+            item2 = QStandardItem("{}".format(self.subtitle_dict[row].list[i].time_end))
+            item3 = QStandardItem("{}".format(self.subtitle_dict[row].list[i].string.rstrip('\n')))
+            try:
+                self.adjust_model_dict[row].setItem(i, 0, item1)
+                self.adjust_model_dict[row].setItem(i, 1, item2)
+                self.adjust_model_dict[row].setItem(i, 2, item3)
+            except:
+                self.adjust_model_dict[row].appendRow([item1, item2, item3])
+        
+        self.adjust_table.setModel(self.adjust_model_dict[row])
+
+    def AudioToText(self, audiofile, rst_row, index, progress_callback):
+        recognizer = sr.Recognizer()
+        with sr.AudioFile(audiofile) as src:
+            audio_data = recognizer.record(src)
+            try:
+                rst = recognizer.recognize_google(audio_data, language= 'zh-TW')
+                self.subtitle_dict[rst_row].list[index].string = rst
+                print(rst)
+            except sr.UnknownValueError:
+                print("Google Speech Recognition could not understand audio")
+            except sr.RequestError as e:
+                print("Could not request results from google Speech Recognition service; {0}".format(e))
+            except IOError as e:
+                print("IOError; {0}".format(e))
+
+        return
+
     def SetupSubtitleAndTable_launcher(self, progress_callback):
         for row in range(self.src_listmodel.rowCount()):
             self.SetupSubtitleAndTable(modelIndex=row)
@@ -551,62 +653,19 @@ class Gen_subtitle_popup(QDialog):
                 
             self.adjust_model_dict[modelIndex].appendRow([item1, item2, item3])
 
-    def ChangeBtnState(self, chkbox, btn):
-        if chkbox.isChecked() == True:
-            btn.setEnabled(True)
-        else:
-            btn.setDisabled(True)
-
-    def AdjustSubtitle(self, current):
-        current_row = str(current.row() + 1)
-        if current_row not in self.adjust_model_dict:
-            return
-        #     self.SetupSubtitleAndTable(current_row)
-
-        self.adjust_table.setModel(self.adjust_model_dict[current_row])
-
-    def GetCurrentIndex(self):
-        for i in range(self.src_listmodel.rowCount()):
-            if self.src_listview.currentIndex() == self.src_listmodel.index(i):
-                return i
-
-    def ModifyItem(self, item):
-        # print(item.row(), item.column(), item.text())
-        src_index = str(self.GetCurrentIndex() + 1)
-
-        if item.column() == 0:
-            self.subtitle_dict[src_index][item.row()].time_start = item.text()
-        elif item.column() == 1:
-            self.subtitle_dict[src_index][item.row()].time_end = item.text()
-        else:
-            self.subtitle_dict[src_index][item.row()].string = item.text()
-                    
-        for i in self.subtitle_dict[src_index]:
-            print(i.time_start, i.time_end)
-            print(i.string)
-            print()
-
-    def GetSrcArg(self, srcfile):
-        slash_pos = srcfile.rfind('/')
-        dot_pos = srcfile.rfind('.')
-        return srcfile[:slash_pos+1], srcfile[slash_pos+1:dot_pos], srcfile[dot_pos:]
-
     def GetSubtitle(self, srcfile, blank=True):
         src_path, src_name, src_format = self.GetSrcArg(srcfile)
-
+        sub_list = []
         if os.path.exists(src_path + src_name + '.srt'):
             file = open(src_path + src_name + '.srt', encoding='utf-8')
-            subtitle_line = file.readlines()
+            sub_file = file.readlines()
             file.close()
 
-            subtitle_list = []
-            for index in range(0, len(subtitle_line), 4):
-                string = subtitle_line[index + 2]
-                pos = subtitle_line[index + 1].find('-')
-                time_start = subtitle_line[index + 1][:pos-1]
-                time_end = subtitle_line[index+1][pos+4:]
-                subtitle_list.append(Subtitle(time_start, time_end, string))
-
+            for line in range(0, len(sub_file), 4):
+                string = sub_file[line + 2]
+                pos = sub_file[line + 1].find('-')
+                time_start, time_end = sub_file[line + 1][:pos-1], sub_file[line+1][pos+4:]
+                sub_list.append(Subtitle(time_start, time_end, string))
         else:
             if not os.path.exists(src_path + 'wav/'):
                 os.mkdir(src_path + 'wav/')
@@ -625,6 +684,7 @@ class Gen_subtitle_popup(QDialog):
             )
 
             subtitle_list = []
+            rst_list = []
             for i, r in enumerate(audio_regions):
                 print("Region {i}: {r.meta.start:.3f}s -- {r.meta.end:.3f}s".format(i=i, r=r))
                 filename = r.save(src_path + "region_{meta.start:.3f}-{meta.end:.3f}.wav")
@@ -652,21 +712,37 @@ class Gen_subtitle_popup(QDialog):
 
         return subtitle_list
 
-    def AudioToText(self, audiofile):
-        recognizer = sr.Recognizer()
-        with sr.AudioFile(audiofile) as src:
-            audio_data = recognizer.record(src)
-            try:
-                text = recognizer.recognize_google(audio_data, language= 'zh-TW')
-                return text
-            except sr.UnknownValueError:
-                print("Google Speech Recognition could not understand audio")
-            except sr.RequestError as e:
-                print("Could not request results from google Speech Recognition service; {0}".format(e))
-            except IOError as e:
-                print("IOError; {0}".format(e))
+    def ChangeBtnState(self, chkbox, btn):
+        if chkbox.isChecked() == True:
+            btn.setEnabled(True)
+        else:
+            btn.setDisabled(True)
 
-            return ' '
+    def GetCurrentIndex(self):
+        for i in range(self.src_listmodel.rowCount()):
+            if self.src_listview.currentIndex() == self.src_listmodel.index(i):
+                return i
+
+    def ModifyItem(self, item):
+        print(item.row(), item.column(), item.text())
+        src_index = str(self.GetCurrentIndex() + 1)
+        if item.column() == 0:
+            self.subtitle_dict[src_index].list[item.row()].time_start = item.text()
+        elif item.column() == 1:
+            self.subtitle_dict[src_index].list[item.row()].time_end = item.text()
+        else:
+            self.subtitle_dict[src_index].list[item.row()].string = item.text()
+                    
+        print('Modifying Item...')
+        for i in self.subtitle_dict[src_index].list:
+            print(i.time_start, i.time_end)
+            print(i.string)
+            print()
+
+    def GetSrcArg(self, srcfile):
+        slash_pos = srcfile.rfind('/')
+        dot_pos = srcfile.rfind('.')
+        return srcfile[:slash_pos+1], srcfile[slash_pos+1:dot_pos], srcfile[dot_pos:]
 
     def GenerateSubtitle_Launcher(self):
         current_row = self.GetCurrentIndex()
@@ -685,7 +761,7 @@ class Gen_subtitle_popup(QDialog):
     def Export_srt_file(self, row, progress_callback):
         src_path, src_name, src_format = self.GetSrcArg(self.src_list[row])
         row = str(row+1)
-        subtitle_list = self.subtitle_dict[row]
+        subtitle_list = self.subtitle_dict[row].list
 
         f = open(src_path+src_name+'.srt', 'w')
         for i in range(len(subtitle_list)):
@@ -715,7 +791,7 @@ class Gen_subtitle_popup(QDialog):
     def GenerateSubtitle(self, row, progress_callback):
         src_path, src_name, src_format = self.GetSrcArg(self.src_list[row])
         row = str(row+1)
-        subtitle_list = self.subtitle_dict[row]
+        subtitle_list = self.subtitle_dict[row].list
 
         for i in subtitle_list:
             print(i.time_start, i.time_end)
