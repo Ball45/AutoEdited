@@ -26,19 +26,20 @@ class Subtitle:
 
     @classmethod
     def get_mid_time(cls, time_start, time_end):
-        h1, m1, s1, ms1 = time_start[0:2], time_start[3:5], time_start[6:8], time_start[9:]
-        h2, m2, s2, ms2 = time_end[0:2], time_end[3:5], time_end[6:8], time_end[9:]
-        ss1 = int(h1) * 60 * 60 + int(m1) * 60 + int(s1) 
-        ss2 = int(h2) * 60 * 60 + int(m2) * 60 + int(s2)
-        dur = (ss2 - ss1)//2
-
-        rh = int(h1) + dur // 3600
-        dur %= 3600
-        rm = int(m1) + dur // 60
-        dur %= 60
-        rs = int(s1) + dur
+        # h1, m1, s1, ms1 = time_start[0:2], time_start[3:5], time_start[6:8], time_start[9:]
+        # h2, m2, s2, ms2 = time_end[0:2], time_end[3:5], time_end[6:8], time_end[9:]
+        # ss1 = int(h1) * 60 * 60 + int(m1) * 60 + int(s1) 
+        # ss2 = int(h2) * 60 * 60 + int(m2) * 60 + int(s2)
+        # dur = (ss2 - ss1)//2
+        dur = (float(time_end) - float(time_start))//2
+        # rh = int(h1) + dur // 3600
+        # dur %= 3600
+        # rm = int(m1) + dur // 60
+        # dur %= 60
+        # rs = int(s1) + dur
         
-        return str(rh).zfill(2) + ':' + str(rm).zfill(2) + ':' + str(rs).zfill(2) + ',' + '000'
+        # return str(rh).zfill(2) + ':' + str(rm).zfill(2) + ':' + str(rs).zfill(2) + ',' + '000'
+        return str(float(time_start) + dur)
 
 class Subtitle_list:
     def __init__(self):
@@ -497,15 +498,15 @@ class Gen_subtitle_popup(QDialog):
             self.adjust_model_dict[row].setHorizontalHeaderLabels(['Time start', 'Time end', 'Subtitle'])
             self.adjust_model_dict[row].itemChanged.connect(self.ModifyItem)
 
-        subtitle_wkr = Worker(self.BuildupSubtitle)
-        subtitle_wkr.setAutoDelete(True)
-        self.thd_pool.start(subtitle_wkr)
         table_wkr = Worker(self.BuildupTable)
         table_wkr.setAutoDelete(True)
         self.thd_pool.start(table_wkr)
+        subtitle_wkr = Worker(self.BuildupSubtitle)
+        subtitle_wkr.setAutoDelete(True)
+        self.thd_pool.start(subtitle_wkr)
 
         self.adjust_table.horizontalHeader().setStretchLastSection(True)
-        self.adjust_table.setFixedHeight(300)
+        self.adjust_table.setFixedHeight(500)
         self.src_listview.selectionModel().currentChanged.connect(lambda: self.RefreshTable(None))
 
         # Accept checkbox
@@ -542,7 +543,7 @@ class Gen_subtitle_popup(QDialog):
 
     def BuildupSubtitle(self, progress_callback):
         for row in range(self.src_listmodel.rowCount()):
-            row = str(row + 1)                
+            row = str(row + 1)             
             src_path, src_name, src_fmt = self.GetSrcArg(self.src_list[int(row) - 1])
             self.subtitle_dict[row] = Subtitle_list()
             if os.path.exists(src_path + src_name + '.srt'):
@@ -581,28 +582,30 @@ class Gen_subtitle_popup(QDialog):
                     while self.thd_pool.maxThreadCount() <= self.thd_pool.activeThreadCount(): pass
                     self.thd_pool.start(audio2txt_wkr)
 
-            while 2 < self.thd_pool.activeThreadCount(): pass
+            while 2 < self.thd_pool.activeThreadCount(): pass # wait for all subtitle thread finished
             self.subtitle_dict[row].Optimize_length()
             self.subtitle_dict[row].Add_blank()
+            self.RefreshTable()
 
     def BuildupTable(self, progress_callback):
-        while 1 < self.thd_pool.activeThreadCount():
-            print(self.thd_pool.activeThreadCount())
+        row = str(self.GetCurrentIndex() + 1) 
+        while 1 < self.thd_pool.activeThreadCount(): # if generate_subtitle thread is processing
+            # print("[Log] Active Thread Count: {}".format(self.thd_pool.activeThreadCount()))
             try:
-                self.RefreshTable()
+                self.RefreshTable(full = False)
 
             except: pass
             time.sleep(0.2)
-        
-        self.RefreshTable()
 
-    def RefreshTable(self, row = None):
-        row = self.GetCurrentIndex() if row == None else row
-        row = str(row + 1)
-        for i in range(len(self.subtitle_dict[row].list)):
-            item1 = QStandardItem("{}".format(self.subtitle_dict[row].list[i].time_start))
-            item2 = QStandardItem("{}".format(self.subtitle_dict[row].list[i].time_end))
-            item3 = QStandardItem("{}".format(self.subtitle_dict[row].list[i].string.rstrip('\n')))
+    def RefreshTable(self, row = None, full=True):
+        row = str(self.GetCurrentIndex() + 1) if row == None else str(row + 1)
+        end = len(self.subtitle_dict[row].list)
+        start = 0 if full or self.thd_pool.maxThreadCount()*2 >= end else end - self.thd_pool.maxThreadCount()*2
+        
+        for i in range(start, end):
+            item1 = QStandardItem(self.subtitle_dict[row].list[i].time_start)
+            item2 = QStandardItem(self.subtitle_dict[row].list[i].time_end)
+            item3 = QStandardItem(self.subtitle_dict[row].list[i].string.rstrip('\n'))
             try:
                 self.adjust_model_dict[row].setItem(i, 0, item1)
                 self.adjust_model_dict[row].setItem(i, 1, item2)
@@ -619,13 +622,15 @@ class Gen_subtitle_popup(QDialog):
             try:
                 rst = recognizer.recognize_google(audio_data, language= 'zh-TW')
                 self.subtitle_dict[rst_row].list[index].string = rst
-                print(rst)
+                # print(rst)
             except sr.UnknownValueError:
-                print("Google Speech Recognition could not understand audio")
+                self.subtitle_dict[rst_row].list[index].string = "Recognize Error"
             except sr.RequestError as e:
                 print("Could not request results from google Speech Recognition service; {0}".format(e))
             except IOError as e:
                 print("IOError; {0}".format(e))
+            except:
+                print("[Log] AudioToText(): Unexpect Error")
 
         return
 
@@ -641,20 +646,18 @@ class Gen_subtitle_popup(QDialog):
                 return i
 
     def ModifyItem(self, item):
-        print(item.row(), item.column(), item.text())
-        src_index = str(self.GetCurrentIndex() + 1)
-        if item.column() == 0:
-            self.subtitle_dict[src_index].list[item.row()].time_start = item.text()
-        elif item.column() == 1:
-            self.subtitle_dict[src_index].list[item.row()].time_end = item.text()
-        else:
-            self.subtitle_dict[src_index].list[item.row()].string = item.text()
-                    
-        print('Modifying Item...')
-        for i in self.subtitle_dict[src_index].list:
-            print(i.time_start, i.time_end)
-            print(i.string)
-            print()
+        try:
+            src_index = str(self.GetCurrentIndex() + 1)
+            if item.column() == 0:
+                self.subtitle_dict[src_index].list[item.row()].time_start = item.text()
+            elif item.column() == 1:
+                self.subtitle_dict[src_index].list[item.row()].time_end = item.text()
+            else:
+                self.subtitle_dict[src_index].list[item.row()].string = item.text()
+    
+            print('[Log] Modifying Item: {}  {}  {}'.format(item.row(), item.column(), item.text()))
+        except:
+            pass
 
     def GetSrcArg(self, srcfile):
         slash_pos = srcfile.rfind('/')
@@ -710,11 +713,6 @@ class Gen_subtitle_popup(QDialog):
         row = str(row+1)
         subtitle_list = self.subtitle_dict[row].list
 
-        for i in subtitle_list:
-            print(i.time_start, i.time_end)
-            print(i.string)
-            print()
-
         FONT_URL="./resources/GenJyuuGothicL-Medium.ttf"
         def annotate(clip, txt, txt_color='black', fontsize=60):
             """ Writes a text at the bottom of the clip. """
@@ -735,7 +733,7 @@ class Gen_subtitle_popup(QDialog):
 
 if __name__ == "__main__" :
     app = QApplication(sys.argv)
-    app.setWindowIcon(QIcon('PyQt5/resources/icon.png'))
+    app.setWindowIcon(QIcon('./resources/icon.png'))
     win = Edit_videos_windows()
     win.show()
     sys.exit(app.exec_())
