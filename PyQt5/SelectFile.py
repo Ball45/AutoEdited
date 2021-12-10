@@ -1,11 +1,10 @@
-import os, time, cv2, sys, auditok, traceback
+import os, time, cv2, sys, auditok, traceback, subprocess, platform
 from PyQt5.QtCore import *
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
 import numpy as np
 import speech_recognition as sr
 from moviepy.editor import *
-import subprocess
 
 class Subtitle:
     def __init__(self, time_start, time_end, string=' '):
@@ -130,9 +129,6 @@ class Worker(QRunnable):
             self.signals.result.emit(result)  # Return the result of the processing
         finally:
             self.signals.finished.emit()  # Done
-    
-
-sec = 0
 
 # class WorkThread(QThread):
 #     timer = pyqtSignal() # 每隔一秒發送一次信號
@@ -429,9 +425,15 @@ class Edit_videos_windows(QWidget):
                 self.listModel.setData(index, outfile) 
                 break
             
-        # vlc = "/Applications/VLC.app/Contents/MacOS/VLC"
-        # p1 =subprocess.run ([''+vlc+'', ''+outfile+'',  'vlc://quit'])
-        # print(p1)
+        self.LaunchFile(outfile)
+
+    def LaunchFile(self, file):
+        if platform.system() == 'Darwin':       # macOS
+            subprocess.call(('open', file))
+        elif platform.system() == 'Windows':    # Windows
+            os.startfile(file)
+        else:                                   # linux variants
+            subprocess.call(('xdg-open', file))
 
     def GetSrcArg(self, srcfile):
         slash_pos = srcfile.rfind('/')
@@ -620,17 +622,16 @@ class Gen_subtitle_popup(QDialog):
         with sr.AudioFile(audiofile) as src:
             audio_data = recognizer.record(src)
             try:
-                rst = recognizer.recognize_google(audio_data, language= 'zh-TW')
-                self.subtitle_dict[rst_row].list[index].string = rst
+                self.subtitle_dict[rst_row].list[index].string = recognizer.recognize_google(audio_data, language= 'zh-TW')
                 # print(rst)
             except sr.UnknownValueError:
                 self.subtitle_dict[rst_row].list[index].string = "Recognize Error"
             except sr.RequestError as e:
-                print("Could not request results from google Speech Recognition service; {0}".format(e))
+                self.subtitle_dict[rst_row].list[index].string = "Request Error"
             except IOError as e:
-                print("IOError; {0}".format(e))
+                self.subtitle_dict[rst_row].list[index].string = "IO Error"
             except:
-                print("[Log] AudioToText(): Unexpect Error")
+                self.subtitle_dict[rst_row].list[index].string = "Unexpect Error"
 
         return
 
