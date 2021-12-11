@@ -6,7 +6,7 @@ import numpy as np
 import speech_recognition as sr
 from moviepy.editor import *
 
-class Subtitle:
+class Speech:
     def __init__(self, start, end, silent=None, content=' '):
         self.start = start
         self.end = end
@@ -23,7 +23,7 @@ class Subtitle:
         latter_timeend = self.end
         latter_content = self.content[len(self.content)//2:]
 
-        return Subtitle(former_timestart, former_timeend, former_content), Subtitle(latter_timestart, latter_timeend, latter_content)
+        return Speech(former_timestart, former_timeend, former_content), Speech(latter_timestart, latter_timeend, latter_content)
 
     @classmethod
     def get_mid_time(cls, start, end):
@@ -42,7 +42,7 @@ class Subtitle:
         # return str(rh).zfill(2) + ':' + str(rm).zfill(2) + ':' + str(rs).zfill(2) + ',' + '000'
         return str(float(start) + dur)
 
-class Subtitle_list:
+class Speech_list:
     def __init__(self):
         self.list = []
 
@@ -52,7 +52,7 @@ class Subtitle_list:
             if self.list[i].end < self.list[i+1].start:
                 start = self.list[i].end
                 end = self.list[i+1].start
-                self.list.insert(i+1, Subtitle(start, end))
+                self.list.insert(i+1, Speech(start, end))
                 i += 1
 
             i += 1
@@ -131,17 +131,6 @@ class Worker(QRunnable):
             self.signals.result.emit(result)  # Return the result of the processing
         finally:
             self.signals.finished.emit()  # Done
-
-# class WorkThread(QThread):
-#     timer = pyqtSignal() # 每隔一秒發送一次信號
-#     end = pyqtSignal()   # 技術完成後發送一次信號
-#     def run(self):
-#         while True:
-#             self.sleep(1) # 休眠一秒
-#             if sec == 100:
-#                 self.end.emit() # 發送end信號
-#                 break;
-#             self.timer.emit()  # 發送timer信號
 
 class Edit_videos_windows(QWidget):
     def __init__(self, parent = None):
@@ -298,21 +287,21 @@ class Edit_videos_windows(QWidget):
         )
 
         # build speeching content
-        speech_content = Subtitle_list()        
+        speech_content = Speech_list()        
         for i, r in enumerate(audio_regions):
             filename = r.save(src_path + "audio_{}.wav".format(i))
-            speech_content.list.append(Subtitle(r.meta.start, r.meta.end, ' '))
+            speech_content.list.append(Speech(r.meta.start, r.meta.end, ' '))
 
         # get all command position
         self.ExportMsg(self.rst_model, "Detecting :", src_name + src_format)
-        instuction_list = self.DetectInstructionPosition(speech_content.list, src_path)
+        instuction_list = self.DetectCmdPosition(speech_content.list, src_path)
         if len(instuction_list) == 0:
             self.ExportMsg(self.rst_model, "[Command not found]", src_name + src_format)
             return
 
         # process all command
         self.ExportMsg(self.rst_model, "Processing :", src_name + src_format)
-        croptime = self.ProcessInstruction(instuction_list)
+        croptime = self.ProcessCmd(srcfile, instuction_list)
         print(croptime)
 
         # crop the video
@@ -337,62 +326,6 @@ class Edit_videos_windows(QWidget):
 
         return
 
-    def tmp_graylevel_process(self):
-
-        # # 抓影片前5秒進行辨識
-        # before_ins_end = int(pre_content.end)      #指令前的結束時間
-        # if (before_ins_end-5) < 0 :
-        #     before_ins_start=0
-        #     sec = float(before_ins_end)
-        # else :
-        #     before_ins_start = before_ins_end-5    #指令前的起始時間
-        #     sec = 5
-        
-        # after_ins_start = float(content.start) # 指令後的起始時間
-        # print('往前抓＿秒進行辨識:',sec)
-        # 轉灰階--------------------------------------
-        self.ExportMsg(self.rst_model, "Comparing :", src_name + src_format)
-        for i in range(0,len(ins_loca)-1,2):
-            grayclip = VideoFileClip(srcfile).subclip(round(ins_loca[i],2),round(ins_loca[i+1],2))
-            gray_scalar = []
-            for frames in grayclip.iter_frames():
-                gray = cv2.cvtColor(frames, cv2.COLOR_BGR2GRAY)
-                #cv2.imshow("gray", gray) #播放灰階影片
-                gray_scalar.append(gray)
-                key = cv2.waitKey(1)
-                if key == ord("q"):
-                    break;
-            print('轉灰階成功clip :', round(before_ins_start,2),'s - ', round(after_ins_start,2),'s ')        
-            #print(len(gray_scalar))
-        
-        # 找出fps---------------------------------------
-            clip = cv2.VideoCapture(srcfile)
-            fps = clip.get(cv2.CAP_PROP_FPS)
-            fps = round(fps,)       
-            clip.release()
-
-        # 偵測重複 ----------------------------------
-            min = 100000000000
-            
-            for i in range(sec*fps):
-                before_ins = gray_scalar[i]
-                after_ins = gray_scalar[len(gray_scalar)-1]
-                
-                d = (before_ins-after_ins)**2
-                
-                if min > d.sum():
-                    cutpoint = (before_ins_start*fps+i)/fps 
-                    min = d.sum()
-                #print('t : ', round(before_ins_start*fps+i+j, 1)/fps,' ', d.sum())          
-            #輸出最相近
-            print(cutpoint, min)
-            subclip_sec.append(float(cutpoint))
-            subclip_sec.append(float(after_ins_start))
-
-        subclip_sec.insert(0, 0)
-        subclip_sec.append(' ')
-        print('subclip[(from_t, to_t)]:',subclip_sec)
-
     def Crop(self, src_clip, croptime):
         clips = []
         start_time = 0
@@ -414,9 +347,9 @@ class Edit_videos_windows(QWidget):
 
         return txt
 
-    def DetectInstructionPosition(self, content_list, src_path='./'):
+    def DetectCmdPosition(self, content_list, src_path='./'):
         rst_list = []
-        pre_content = Subtitle(0, 0)
+        pre_content = Speech(0, 0)
         for i in range(len(content_list)):
             content = content_list[i]
             content.silent = content.start - pre_content.end
@@ -425,27 +358,27 @@ class Edit_videos_windows(QWidget):
                 txt = self.AudioToText(src_path + "audio_{}.wav".format(i))
                 if "剪接" in str(txt): 
                     pre_content.content = self.AudioToText(src_path + "audio_{}.wav".format(i-1))
-                    suf_content = content_list[i+1]
-                    suf_content.content = self.AudioToText(src_path + "audio_{}.wav".format(i+1))
-                    rst_list.append((pre_content, suf_content))
+                    next_content = content_list[i+1]
+                    next_content.content = self.AudioToText(src_path + "audio_{}.wav".format(i+1))
+                    rst_list.append((pre_content, next_content))
 
             pre_content = content
 
         for data in rst_list:
-            print(data[0].content, data[1].content)
+            print("[Log] Command detected: ", data[0].content, data[1].content)
 
         return rst_list
 
-    def ProcessInstruction(self, instruction_list):
-        croptime = self.ProcessBySpeechContent(instruction_list)
-        if False in croptime:
-            print("[Log] ProcessInstruction() : False found in croptime")
+    def ProcessCmd(self, src_file, cmd_list):
+        croptimes = self.ProcessCmdBySpeech(cmd_list)
+        for i in range(len(croptimes)):
+            croptimes[i] = self.ProcessCmdByScreen(src_file, cmd_list[i]) if croptimes[i] == False else croptimes[i]
+            
+        return croptimes
 
-        return croptime
-
-    def ProcessBySpeechContent(self, instruction_list):
+    def ProcessCmdBySpeech(self, command_list):
         croptime = []
-        for ins in instruction_list: # instruction
+        for ins in command_list: # command
             pre_content, new_content = ins[0].content, ins[1].content
             word_length = 1
             succeed = False
@@ -461,6 +394,68 @@ class Edit_videos_windows(QWidget):
                 croptime.append(False)
 
         return  croptime
+
+    def ProcessCmdByScreen(self, srcfile, cmd):
+        wrong_speech, new_speech = cmd[0], cmd[1]
+        full_clip = VideoFileClip(srcfile)
+        wrong_speech_clip = full_clip.subclip(wrong_speech.start, wrong_speech.end)
+        new_frame = cv2.cvtColor(full_clip.subclip(new_speech.start, new_speech.start + 0.1).get_frame(0), cv2.COLOR_BGR2GRAY)
+
+        min_diff = float('inf') # infinite
+        frame_seq = 0 # frame sequence
+        for frame in wrong_speech_clip.iter_frames():
+            wrong_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+            diff = (new_frame - wrong_frame) ** 2
+
+            if diff.sum() < min_diff:
+                min_diff = diff.sum()
+                wrong_point = wrong_speech.start + frame_seq/wrong_speech_clip.fps
+            
+            frame_seq += 1
+
+        return wrong_point, new_speech.start
+                
+
+        # for i in range(0,len(ins_loca)-1,2):
+        #     grayclip = VideoFileClip(srcfile).subclip(round(ins_loca[i],2),round(ins_loca[i+1],2))
+        #     gray_scalar = []
+        #     for frames in grayclip.iter_frames():
+        #         gray = cv2.cvtColor(frames, cv2.COLOR_BGR2GRAY)
+        #         #cv2.imshow("gray", gray) #播放灰階影片
+        #         gray_scalar.append(gray)
+        #         key = cv2.waitKey(1)
+        #         if key == ord("q"):
+        #             break;
+        #     print('轉灰階成功clip :', round(before_ins_start,2),'s - ', round(after_ins_start,2),'s ')        
+        #     #print(len(gray_scalar))
+        
+        # # 找出fps---------------------------------------
+        #     clip = cv2.VideoCapture(srcfile)
+        #     fps = clip.get(cv2.CAP_PROP_FPS)
+        #     fps = round(fps,)       
+        #     clip.release()
+
+        # # 偵測重複 ----------------------------------
+        #     min = 100000000000
+            
+        #     for i in range(sec*fps):
+        #         before_ins = gray_scalar[i]
+        #         after_ins = gray_scalar[len(gray_scalar)-1]
+                
+        #         d = (before_ins-after_ins)**2
+                
+        #         if min > d.sum():
+        #             cutpoint = (before_ins_start*fps+i)/fps 
+        #             min = d.sum()
+       
+        #     #輸出最相近
+        #     print(cutpoint, min)
+        #     subclip_sec.append(float(cutpoint))
+        #     subclip_sec.append(float(after_ins_start))
+
+        # subclip_sec.insert(0, 0)
+        # subclip_sec.append(' ')
+        # print('subclip[(from_t, to_t)]:',subclip_sec)
 
     def LaunchFile(self, file):
         if platform.system() == 'Darwin':       # macOS
@@ -480,16 +475,14 @@ class Edit_videos_windows(QWidget):
             QMessageBox.information(self,'Message','Please selected file first', QMessageBox.Ok)
             return 
 
-        popup = Gen_subtitle_popup(self.listModel.stringList())
+        popup = Subtitle_Popup(self.listModel.stringList())
         try:
-            rtn_val = popup.exec_()
-        except:
-            rtn_val = 1
+            popup.exec_()
+        except: pass
         
-        print(rtn_val)
             
 
-class Gen_subtitle_popup(QDialog):
+class Subtitle_Popup(QDialog):
     def __init__(self, src_list):
         super().__init__()
         self.thd_pool = QThreadPool()
@@ -582,7 +575,7 @@ class Gen_subtitle_popup(QDialog):
         for row in range(self.src_listmodel.rowCount()):
             row = str(row + 1)             
             src_path, src_name, src_fmt = self.GetSrcArg(self.src_list[int(row) - 1])
-            self.subtitle_dict[row] = Subtitle_list()
+            self.subtitle_dict[row] = Speech_list()
             if os.path.exists(src_path + src_name + '.srt'):
                 file = open(src_path + src_name + '.srt', encoding='utf-8')
                 sub_file = file.readlines()
@@ -592,7 +585,7 @@ class Gen_subtitle_popup(QDialog):
                     content = sub_file[line + 2]
                     pos = sub_file[line + 1].find('-')
                     start, end = sub_file[line + 1][:pos-1], sub_file[line+1][pos+4:]
-                    self.subtitle_dict[row].list.append(Subtitle(start, end, content))
+                    self.subtitle_dict[row].list.append(Speech(start, end, content))
             else:
                 src_path += 'wav/'
                 if not os.path.exists(src_path + src_name + '.wav'):
@@ -612,7 +605,7 @@ class Gen_subtitle_popup(QDialog):
                 for i, r in enumerate(audio_region):
                     filename = r.save(src_path + "region_{meta.start:.3f}-{meta.end:.3f}.wav")
                     start, end = "{r.meta.start:.3f}".format(r=r), "{r.meta.end:.3f}".format(r=r)
-                    self.subtitle_dict[row].list.append(Subtitle(start, end, ' '))
+                    self.subtitle_dict[row].list.append(Speech(start, end, ' '))
                     audio2txt_wkr = Worker(self.AudioToText, filename, row, len(self.subtitle_dict[row].list) - 1)
                     audio2txt_wkr.setAutoDelete(True)
                     while self.thd_pool.maxThreadCount() <= self.thd_pool.activeThreadCount(): pass
@@ -657,7 +650,6 @@ class Gen_subtitle_popup(QDialog):
             audio_data = recognizer.record(src)
             try:
                 self.subtitle_dict[rst_row].list[index].content = recognizer.recognize_google(audio_data, language= 'zh-TW')
-                # print(rst)
             except sr.UnknownValueError:
                 self.subtitle_dict[rst_row].list[index].content = "Recognize Error"
             except sr.RequestError as e:
