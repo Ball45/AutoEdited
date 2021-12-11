@@ -361,11 +361,9 @@ class Edit_videos_windows(QWidget):
                     next_content = content_list[i+1]
                     next_content.content = self.AudioToText(src_path + "audio_{}.wav".format(i+1))
                     rst_list.append((pre_content, next_content))
+                    self.ExportMsg(self.rst_model, "[Command Detected]", "Between '{}', '{}'".format(pre_content.content, next_content.content))
 
             pre_content = content
-
-        for data in rst_list:
-            print("[Log] Command detected: ", data[0].content, data[1].content)
 
         return rst_list
 
@@ -480,7 +478,6 @@ class Edit_videos_windows(QWidget):
             popup.exec_()
         except: pass
         
-            
 
 class Subtitle_Popup(QDialog):
     def __init__(self, src_list):
