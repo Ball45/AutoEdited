@@ -7,30 +7,32 @@ import speech_recognition as sr
 from moviepy.editor import *
 
 class Subtitle:
-    def __init__(self, time_start, time_end, string=' '):
-        self.time_start = time_start
-        self.time_end = time_end
-        self.string = string
+    def __init__(self, start, end, silent=None, content=' '):
+        self.start = start
+        self.end = end
+        self.length = float(start) - float(end)
+        self.silent = silent # silent time before this speech
+        self.content = content
 
     def split(self):
         # yet using time library
-        former_timestart = self.time_start
-        former_timeend = self.get_mid_time(self.time_start, self.time_end)
-        former_string = self.string[:len(self.string)//2] + '\n'
-        latter_timestart = self.get_mid_time(self.time_start, self.time_end)
-        latter_timeend = self.time_end
-        latter_string = self.string[len(self.string)//2:]
+        former_timestart = self.start
+        former_timeend = self.get_mid_time(self.start, self.end)
+        former_content = self.content[:len(self.content)//2] + '\n'
+        latter_timestart = self.get_mid_time(self.start, self.end)
+        latter_timeend = self.end
+        latter_content = self.content[len(self.content)//2:]
 
-        return Subtitle(former_timestart, former_timeend, former_string), Subtitle(latter_timestart, latter_timeend, latter_string)
+        return Subtitle(former_timestart, former_timeend, former_content), Subtitle(latter_timestart, latter_timeend, latter_content)
 
     @classmethod
-    def get_mid_time(cls, time_start, time_end):
-        # h1, m1, s1, ms1 = time_start[0:2], time_start[3:5], time_start[6:8], time_start[9:]
-        # h2, m2, s2, ms2 = time_end[0:2], time_end[3:5], time_end[6:8], time_end[9:]
+    def get_mid_time(cls, start, end):
+        # h1, m1, s1, ms1 = start[0:2], start[3:5], start[6:8], start[9:]
+        # h2, m2, s2, ms2 = end[0:2], end[3:5], end[6:8], end[9:]
         # ss1 = int(h1) * 60 * 60 + int(m1) * 60 + int(s1) 
         # ss2 = int(h2) * 60 * 60 + int(m2) * 60 + int(s2)
         # dur = (ss2 - ss1)//2
-        dur = (float(time_end) - float(time_start))//2
+        dur = (float(end) - float(start))//2
         # rh = int(h1) + dur // 3600
         # dur %= 3600
         # rm = int(m1) + dur // 60
@@ -38,7 +40,7 @@ class Subtitle:
         # rs = int(s1) + dur
         
         # return str(rh).zfill(2) + ':' + str(rm).zfill(2) + ':' + str(rs).zfill(2) + ',' + '000'
-        return str(float(time_start) + dur)
+        return str(float(start) + dur)
 
 class Subtitle_list:
     def __init__(self):
@@ -47,17 +49,17 @@ class Subtitle_list:
     def Add_blank(self):
         i = 0
         while i < len(self.list) - 1:
-            if self.list[i].time_end < self.list[i+1].time_start:
-                time_start = self.list[i].time_end
-                time_end = self.list[i+1].time_start
-                self.list.insert(i+1, Subtitle(time_start, time_end))
+            if self.list[i].end < self.list[i+1].start:
+                start = self.list[i].end
+                end = self.list[i+1].start
+                self.list.insert(i+1, Subtitle(start, end))
                 i += 1
 
             i += 1
 
     def Optimize_length(self):
         for index in range(len(self.list)):
-            if 25 < len(self.list[index].string):
+            if 25 < len(self.list[index].content):
                 former, latter = self.list[index].split()
                 self.list[index] = former
                 self.list.insert(index+1, latter)
@@ -230,14 +232,13 @@ class Edit_videos_windows(QWidget):
         for i in range(row1):
             self.listModel.removeRow(self.listview.modelColumn())
 
-    def Export_msg_to_mdl(self, model, msg, src=None, withtime = True):
+    def ExportMsg(self, model, msg, src=None, withtime = True):
         # row = model.rowCount()
         model.insertRow(0)
         index = model.index(0, 0)
         current_time = time.strftime("%H:%M:%S", time.localtime())
-        print(msg)
         if withtime:
-            model.setData(index, "{:<12}{:<13}{}".format(current_time, msg, src)) 
+            model.setData(index, "{:<12}{}  {}".format(current_time, msg, src)) 
         else:
             model.setData(index, "{}".format(msg))
 
@@ -248,7 +249,7 @@ class Edit_videos_windows(QWidget):
             return
         
         self.buttonClip.setDisabled(True)
-        # self.Export_msg_to_mdl(self.rst_model, 'Processing: ' + self.listModel.stringList()[row])
+        # self.ExportMsg(self.rst_model, 'Processing: ' + self.listModel.stringList()[row])
         # QMessageBox.information(self,'Message','Your file is being processed',QMessageBox.Ok)
                 
     def VideoEdit_launcher(self):
@@ -276,97 +277,81 @@ class Edit_videos_windows(QWidget):
         self.buttonSub.setEnabled(True)
 
     def VideoEdit(self, src_path, src_name, src_format, progress_callback):
+        self.ExportMsg(self.rst_model, "Loading :", src_name + src_format)
         srcfile = src_path + src_name + src_format
-        wavfile = src_path + src_name + '.wav'     # 執行完刪除 *wav
-        outfile = src_path + src_name + '_edited.mp4' # 把檔案存在自己想要的地方
-        self.Export_msg_to_mdl(self.rst_model, "Loading :", src_name + src_format)
-
-        if not os.path.exists(wavfile):
+        wavfile = src_path + src_name + '.wav'     
+        outfile = src_path + src_name + '_edited.mp4' 
+        src_path += 'wav/'
+        if not os.path.exists(src_path + src_name + '.wav'):
+            if not os.path.exists(src_path):
+                os.mkdir(src_path)
+            
             os.system("ffmpeg -i " + srcfile + " " + src_path + src_name + '.wav')
 
-        # 找出fps---------------------------------------
-        clip = cv2.VideoCapture(srcfile)
-        fps = clip.get(cv2.CAP_PROP_FPS)
-        fps = round(fps,)       
-        clip.release()
-
-        # 測試靜音 ----------------------------------
-        self.Export_msg_to_mdl(self.rst_model, "Detecting :", src_name + src_format)
-        # split returns a generator of AudioRegion objects
-        # sound = AudioSegment.from_file(wavfile, format="wav") 
+        # split audio
         audio_regions = auditok.split(
-            wavfile,
-            min_dur=0.2,         # minimum duration of a valid audio event in seconds
-            max_dur=100,         # maximum duration of an event
-            max_silence=2,       # maximum duration of tolerated continuous silence within an event
+            src_path + src_name + '.wav',
+            min_dur=0.01,        # minimum duration of a valid audio event in seconds
+            max_dur=100,        # maximum duration of an event
+            max_silence=0.3,      # maximum duration of tolerated continuous silence within an event
             energy_threshold=50  # threshold of detection
         )
 
-        record_start = np.zeros(1000)
-        record_end = np.zeros(1000)
-        silence_duration = np.zeros(1000)
-        speech_duration = np.zeros(1000)
-        num = 0
-        ins_loca=[]
-        subclip_sec=[]
-
+        # build speeching content
+        speech_content = Subtitle_list()        
         for i, r in enumerate(audio_regions):
-            record_start[i] = r.meta.start
-            record_end[i] = r.meta.end
-            num = num+1
+            filename = r.save(src_path + "audio_{}.wav".format(i))
+            speech_content.list.append(Subtitle(r.meta.start, r.meta.end, ' '))
 
-        for j in range(num-1):
-            # evaluate silence section length
-            silence_duration[j] = record_start[j+1] - record_end[j]
-            print("Silence ", j, " :", round(record_end[j], 3), 's', 'to', round(record_start[j+1], 3), 's, Duration : ', round(silence_duration[j],3))
+        # get all command position
+        self.ExportMsg(self.rst_model, "Detecting :", src_name + src_format)
+        instuction_list = self.DetectInstructionPosition(speech_content.list, src_path)
+        if len(instuction_list) == 0:
+            self.ExportMsg(self.rst_model, "[Command not found]", src_name + src_format)
+            return
 
-            # if there are two continuous silence sections >2.5 
-            if silence_duration[j-1] > 1.4 and silence_duration[j] > 1.4 and speech_duration[j] < 5.0:
-                #print("instruction : ", round(record_start[j], 3), 's', 'to', round(record_end[j], 3), 's')
+        # process all command
+        self.ExportMsg(self.rst_model, "Processing :", src_name + src_format)
+        croptime = self.ProcessInstruction(instuction_list)
+        print(croptime)
 
-        # 辨識是否為語音指令“剪接” ---------------------------
-                r = sr.Recognizer()
-                instruction = sr.AudioFile(wavfile)
-                with instruction as source:
-                    audio = r.record(source, offset = record_start[j], duration = 5)
-                try:
-                    ins = r.recognize_google(audio_data=audio, key=None,language="zh-TW", show_all=True)
-                    if "剪接" in str(ins):
-                        print("instruction ", round(record_start[j], 3), 's to', round(record_end[j], 3), 's'," : 剪接")      
+        # crop the video
+        self.ExportMsg(self.rst_model, "Cropping :", src_name + src_format)
+        clip = VideoFileClip(srcfile)
+        final_clip = self.Crop(clip, croptime)
 
-                        # 抓影片前5秒進行辨識
-                        before_ins_end = int(record_end[j-1])      #指令前的結束時間
-                        if (before_ins_end-5) < 0 :
-                            before_ins_start=0
-                            sec = float(before_ins_end)
-                        else :
-                            before_ins_start = before_ins_end-5    #指令前的起始時間
-                            sec = 5
-                        
-                        after_ins_start = float(record_start[j+1]) # 指令後的起始時間
-                        print('往前抓＿秒進行辨識:',sec)
-                                
-                        ins_loca.append(float(before_ins_start))
-                        ins_loca.append(float(after_ins_start))
-                    
-                    else:
-                        print(ins,'pass')
-                        pass
-                
-                except sr.UnknownValueError:   
-                    ins = "無法翻譯"
-                except sr.RequestError as e:
-                    ins = "無法翻譯{0}".format(e)
-                        
-        for i in range(1,len(ins_loca)-1,2):
-            if ins[i]> ins[i+1]:
-                del ins[i]
-                del ins[i+1]
-        print('ins:',ins_loca)
+        # export the video
+        self.ExportMsg(self.rst_model, "Exporting :", src_name + "_edited" + src_format)
+        final_clip.write_videofile(outfile)
+        final_clip.close()
+        self.ExportMsg(self.rst_model, "[Done]", src_name + "_edited" + src_format)
+        self.UpdateFile(srcfile, outfile)
+        self.LaunchFile(outfile)
 
-                                
+    def UpdateFile(self, srcfile, outfile):
+        for row in range(len(self.listModel.stringList())):
+            if srcfile == self.listModel.stringList()[row]:
+                index = self.listModel.index(row, 0)
+                self.listModel.setData(index, outfile) 
+                break
+
+        return
+
+    def tmp_graylevel_process(self):
+
+        # # 抓影片前5秒進行辨識
+        # before_ins_end = int(pre_content.end)      #指令前的結束時間
+        # if (before_ins_end-5) < 0 :
+        #     before_ins_start=0
+        #     sec = float(before_ins_end)
+        # else :
+        #     before_ins_start = before_ins_end-5    #指令前的起始時間
+        #     sec = 5
+        
+        # after_ins_start = float(content.start) # 指令後的起始時間
+        # print('往前抓＿秒進行辨識:',sec)
         # 轉灰階--------------------------------------
-        self.Export_msg_to_mdl(self.rst_model, "Comparing :", src_name + src_format)
+        self.ExportMsg(self.rst_model, "Comparing :", src_name + src_format)
         for i in range(0,len(ins_loca)-1,2):
             grayclip = VideoFileClip(srcfile).subclip(round(ins_loca[i],2),round(ins_loca[i+1],2))
             gray_scalar = []
@@ -380,6 +365,12 @@ class Edit_videos_windows(QWidget):
             print('轉灰階成功clip :', round(before_ins_start,2),'s - ', round(after_ins_start,2),'s ')        
             #print(len(gray_scalar))
         
+        # 找出fps---------------------------------------
+            clip = cv2.VideoCapture(srcfile)
+            fps = clip.get(cv2.CAP_PROP_FPS)
+            fps = round(fps,)       
+            clip.release()
+
         # 偵測重複 ----------------------------------
             min = 100000000000
             
@@ -402,30 +393,74 @@ class Edit_videos_windows(QWidget):
         subclip_sec.append(' ')
         print('subclip[(from_t, to_t)]:',subclip_sec)
 
-        # 剪接 -------------------------------------
-        self.Export_msg_to_mdl(self.rst_model, "Cropping :", src_name + src_format)
+    def Crop(self, src_clip, croptime):
         clips = []
-        for i in range(0,len(subclip_sec),2):
-            if i == (len(subclip_sec)-2):
-                clip = VideoFileClip(srcfile).subclip(subclip_sec[i], )
-                #print("subclip(",subclip_sec[i],", )")  
-            else:
-                clip = VideoFileClip(srcfile).subclip(subclip_sec[i], subclip_sec[i+1])
-                #print("subclip(",subclip_sec[i],", ",subclip_sec[i+1],")")  
-            clips.append(clip)
-        print ('sub: ', clips)
-        self.Export_msg_to_mdl(self.rst_model, "Exporting :", src_name + "_edited" + src_format)
-        final_clip = concatenate_videoclips(clips)
-        final_clip.write_videofile(outfile)
-        final_clip.close()
-        self.Export_msg_to_mdl(self.rst_model, "Done :", src_name + "_edited" + src_format)
-        for row in range(len(self.listModel.stringList())):
-            if srcfile == self.listModel.stringList()[row]:
-                index = self.listModel.index(row, 0)
-                self.listModel.setData(index, outfile) 
-                break
+        start_time = 0
+        for crop in croptime:
+            clips.append(src_clip.subclip(start_time, crop[0]))
+            start_time = crop[1]
+        
+        clips.append(src_clip.subclip(start_time))
+        return concatenate_videoclips(clips)
+
+    def AudioToText(self, audiofile):
+        recognizer = sr.Recognizer()
+        with sr.AudioFile(audiofile) as src:
+            audio_data = recognizer.record(src)
+            try:
+                txt = recognizer.recognize_google(audio_data, language= 'zh-TW')
+            except:
+                txt = ' ' # None
+
+        return txt
+
+    def DetectInstructionPosition(self, content_list, src_path='./'):
+        rst_list = []
+        pre_content = Subtitle(0, 0)
+        for i in range(len(content_list)):
+            content = content_list[i]
+            content.silent = content.start - pre_content.end
+
+            if 1.4 < content.silent and content.length < 3.0:
+                txt = self.AudioToText(src_path + "audio_{}.wav".format(i))
+                if "剪接" in str(txt): 
+                    pre_content.content = self.AudioToText(src_path + "audio_{}.wav".format(i-1))
+                    suf_content = content_list[i+1]
+                    suf_content.content = self.AudioToText(src_path + "audio_{}.wav".format(i+1))
+                    rst_list.append((pre_content, suf_content))
+
+            pre_content = content
+
+        for data in rst_list:
+            print(data[0].content, data[1].content)
+
+        return rst_list
+
+    def ProcessInstruction(self, instruction_list):
+        croptime = self.ProcessBySpeechContent(instruction_list)
+        if False in croptime:
+            print("[Log] ProcessInstruction() : False found in croptime")
+
+        return croptime
+
+    def ProcessBySpeechContent(self, instruction_list):
+        croptime = []
+        for ins in instruction_list: # instruction
+            pre_content, new_content = ins[0].content, ins[1].content
+            word_length = 1
+            succeed = False
+            for i in range(0, len(new_content), word_length):
+                word = new_content[i:i + word_length + 1]
+                pos_wrong = pre_content.find(word)
+                if -1 < pos_wrong:
+                    croptime.append((float(ins[0].start) + ins[0].length * (pos_wrong / len(pre_content)), ins[1].start))
+                    succeed = True
+                    break
             
-        self.LaunchFile(outfile)
+            if not succeed:
+                croptime.append(False)
+
+        return  croptime
 
     def LaunchFile(self, file):
         if platform.system() == 'Darwin':       # macOS
@@ -554,10 +589,10 @@ class Gen_subtitle_popup(QDialog):
                 file.close()
 
                 for line in range(0, len(sub_file), 4):
-                    string = sub_file[line + 2]
+                    content = sub_file[line + 2]
                     pos = sub_file[line + 1].find('-')
-                    time_start, time_end = sub_file[line + 1][:pos-1], sub_file[line+1][pos+4:]
-                    self.subtitle_dict[row].list.append(Subtitle(time_start, time_end, string))
+                    start, end = sub_file[line + 1][:pos-1], sub_file[line+1][pos+4:]
+                    self.subtitle_dict[row].list.append(Subtitle(start, end, content))
             else:
                 src_path += 'wav/'
                 if not os.path.exists(src_path + src_name + '.wav'):
@@ -566,9 +601,8 @@ class Gen_subtitle_popup(QDialog):
                     
                     os.system("ffmpeg -i " + self.src_list[int(row) - 1] + " " + src_path + src_name + '.wav')
 
-                audiofile = src_path + src_name+'.wav'
                 audio_region = auditok.split(
-                    audiofile,
+                    src_path + src_name+'.wav',
                     min_dur=0.01,        # minimum duration of a valid audio event in seconds
                     max_dur=100,        # maximum duration of an event
                     max_silence=0.3,      # maximum duration of tolerated continuous silence within an event
@@ -605,9 +639,9 @@ class Gen_subtitle_popup(QDialog):
         start = 0 if full or self.thd_pool.maxThreadCount()*2 >= end else end - self.thd_pool.maxThreadCount()*2
         
         for i in range(start, end):
-            item1 = QStandardItem(self.subtitle_dict[row].list[i].time_start)
-            item2 = QStandardItem(self.subtitle_dict[row].list[i].time_end)
-            item3 = QStandardItem(self.subtitle_dict[row].list[i].string.rstrip('\n'))
+            item1 = QStandardItem(self.subtitle_dict[row].list[i].start)
+            item2 = QStandardItem(self.subtitle_dict[row].list[i].end)
+            item3 = QStandardItem(self.subtitle_dict[row].list[i].content.rstrip('\n'))
             try:
                 self.adjust_model_dict[row].setItem(i, 0, item1)
                 self.adjust_model_dict[row].setItem(i, 1, item2)
@@ -622,16 +656,16 @@ class Gen_subtitle_popup(QDialog):
         with sr.AudioFile(audiofile) as src:
             audio_data = recognizer.record(src)
             try:
-                self.subtitle_dict[rst_row].list[index].string = recognizer.recognize_google(audio_data, language= 'zh-TW')
+                self.subtitle_dict[rst_row].list[index].content = recognizer.recognize_google(audio_data, language= 'zh-TW')
                 # print(rst)
             except sr.UnknownValueError:
-                self.subtitle_dict[rst_row].list[index].string = "Recognize Error"
+                self.subtitle_dict[rst_row].list[index].content = "Recognize Error"
             except sr.RequestError as e:
-                self.subtitle_dict[rst_row].list[index].string = "Request Error"
+                self.subtitle_dict[rst_row].list[index].content = "Request Error"
             except IOError as e:
-                self.subtitle_dict[rst_row].list[index].string = "IO Error"
+                self.subtitle_dict[rst_row].list[index].content = "IO Error"
             except:
-                self.subtitle_dict[rst_row].list[index].string = "Unexpect Error"
+                self.subtitle_dict[rst_row].list[index].content = "Unexpect Error"
 
         return
 
@@ -650,11 +684,11 @@ class Gen_subtitle_popup(QDialog):
         try:
             src_index = str(self.GetCurrentIndex() + 1)
             if item.column() == 0:
-                self.subtitle_dict[src_index].list[item.row()].time_start = item.text()
+                self.subtitle_dict[src_index].list[item.row()].start = item.text()
             elif item.column() == 1:
-                self.subtitle_dict[src_index].list[item.row()].time_end = item.text()
+                self.subtitle_dict[src_index].list[item.row()].end = item.text()
             else:
-                self.subtitle_dict[src_index].list[item.row()].string = item.text()
+                self.subtitle_dict[src_index].list[item.row()].content = item.text()
     
             print('[Log] Modifying Item: {}  {}  {}'.format(item.row(), item.column(), item.text()))
         except:
@@ -687,14 +721,14 @@ class Gen_subtitle_popup(QDialog):
         f = open(src_path+src_name+'.srt', 'w')
         for i in range(len(subtitle_list)):
             f.write(str(i) + '\n')
-            f.write(subtitle_list[i].time_start + ' --> ' + subtitle_list[i].time_end + '\n')
-            f.write(subtitle_list[i].string + '\n')
+            f.write(subtitle_list[i].start + ' --> ' + subtitle_list[i].end + '\n')
+            f.write(subtitle_list[i].content + '\n')
             f.write('\n')
 
         f.close()
-        self.Export_msg_to_mdl(self.rst_model, src_path+src_name+'.srt')
+        self.ExportMsg(self.rst_model, src_path+src_name+'.srt')
 
-    def Export_msg_to_mdl(self, model, msg, withtime = True):
+    def ExportMsg(self, model, msg, withtime = True):
         row = model.rowCount()
         model.insertRow(row)
         index = model.index(row, 0)
@@ -707,7 +741,7 @@ class Gen_subtitle_popup(QDialog):
     def SetUI(self, progress_callback):
         self.gen_subtitle_btn.setDisabled(True)
         self.AcceptSubtitle_chkbox.setChecked(False)
-        self.Export_msg_to_mdl(self.rst_model, "Generating subtitle...")
+        self.ExportMsg(self.rst_model, "Generating subtitle...")
 
     def GenerateSubtitle(self, row, progress_callback):
         src_path, src_name, src_format = self.GetSrcArg(self.src_list[row])
@@ -725,12 +759,12 @@ class Gen_subtitle_popup(QDialog):
         src_clip = VideoFileClip(src_path + src_name + src_format)
         annotated_clips = []
         for subtitle in subtitle_list:
-            annotated_clips.append(annotate(src_clip.subclip(subtitle.time_start, subtitle.time_end), subtitle.string))
+            annotated_clips.append(annotate(src_clip.subclip(subtitle.start, subtitle.end), subtitle.content))
 
         final_clip = concatenate_videoclips(annotated_clips)
         final_clip.write_videofile(src_path + src_name + "_with_subtitle.mp4")
-        self.Export_msg_to_mdl(self.rst_model, src_path + src_name + "_with_subtitle.mp4")
-        self.Export_msg_to_mdl(self.rst_model, "Done.")
+        self.ExportMsg(self.rst_model, src_path + src_name + "_with_subtitle.mp4")
+        self.ExportMsg(self.rst_model, "Done.")
 
 if __name__ == "__main__" :
     app = QApplication(sys.argv)
