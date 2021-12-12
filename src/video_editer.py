@@ -412,48 +412,6 @@ class Edit_videos_windows(QWidget):
             frame_seq += 1
 
         return wrong_point, new_speech.start
-                
-
-        # for i in range(0,len(ins_loca)-1,2):
-        #     grayclip = VideoFileClip(srcfile).subclip(round(ins_loca[i],2),round(ins_loca[i+1],2))
-        #     gray_scalar = []
-        #     for frames in grayclip.iter_frames():
-        #         gray = cv2.cvtColor(frames, cv2.COLOR_BGR2GRAY)
-        #         #cv2.imshow("gray", gray) #播放灰階影片
-        #         gray_scalar.append(gray)
-        #         key = cv2.waitKey(1)
-        #         if key == ord("q"):
-        #             break;
-        #     print('轉灰階成功clip :', round(before_ins_start,2),'s - ', round(after_ins_start,2),'s ')        
-        #     #print(len(gray_scalar))
-        
-        # # 找出fps---------------------------------------
-        #     clip = cv2.VideoCapture(srcfile)
-        #     fps = clip.get(cv2.CAP_PROP_FPS)
-        #     fps = round(fps,)       
-        #     clip.release()
-
-        # # 偵測重複 ----------------------------------
-        #     min = 100000000000
-            
-        #     for i in range(sec*fps):
-        #         before_ins = gray_scalar[i]
-        #         after_ins = gray_scalar[len(gray_scalar)-1]
-                
-        #         d = (before_ins-after_ins)**2
-                
-        #         if min > d.sum():
-        #             cutpoint = (before_ins_start*fps+i)/fps 
-        #             min = d.sum()
-       
-        #     #輸出最相近
-        #     print(cutpoint, min)
-        #     subclip_sec.append(float(cutpoint))
-        #     subclip_sec.append(float(after_ins_start))
-
-        # subclip_sec.insert(0, 0)
-        # subclip_sec.append(' ')
-        # print('subclip[(from_t, to_t)]:',subclip_sec)
 
     def LaunchFile(self, file):
         if platform.system() == 'Darwin':       # macOS
@@ -695,6 +653,7 @@ class Subtitle_Popup(QDialog):
 
     def GenerateSubtitle_Launcher(self):
         current_row = self.GetCurrentIndex()
+        self.SetUI(None)
         setui_wkr = Worker(self.SetUI)
         setui_wkr.setAutoDelete(True)
         self.thd_pool.start(setui_wkr)
@@ -703,6 +662,7 @@ class Subtitle_Popup(QDialog):
         eprt_srt_wkr.setAutoDelete(True)
         self.thd_pool.start(eprt_srt_wkr)
 
+        # self.GenerateSubtitle(current_row, None)
         gen_subtitle_wkr = Worker(self.GenerateSubtitle, current_row)
         gen_subtitle_wkr.setAutoDelete(True)
         self.thd_pool.start(gen_subtitle_wkr)

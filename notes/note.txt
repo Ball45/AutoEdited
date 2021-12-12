@@ -1,0 +1,37 @@
+app's enviroment and dependency:
+
+Linux MSI-Ubuntu 5.11.0-41-generic #45~20.04.1-Ubuntu SMP Wed Nov 10 10:20:10 UTC 2021 x86_64 x86_64 x86_64 GNU/Linux
+
+python3
+
+apt install fcitx-frontend-qt5 fcitx-libs-qt fcitx-libs-qt5
+
+imagemagick
+
+<!--
+  <policy domain="coder" rights="none" pattern="PS" />
+  <policy domain="coder" rights="none" pattern="PS2" />
+  <policy domain="coder" rights="none" pattern="PS3" />
+  <policy domain="coder" rights="none" pattern="EPS" />
+  <policy domain="coder" rights="read | write" pattern="PDF" />
+          <policy domain="coder" rights="none" pattern="XPS" />
+  -->
+
+sudo cp /usr/lib/x86_64-linux-gnu/qt5/plugins/platforminputcontexts/libfcitxplatforminputcontextplugin.so /home/ball45/Projects/video/.venv/lib/python3.8/site-packages/PyQt5/Qt5/plugins/platforminputcontexts
+
+
+
+numpy-1.21.4
+opencv-contrib-python-4.1.2.30 ***
+auditok-0.2.0
+speechrecognition-3.8.1
+
+pip install wheel
+ffmpeg
+
+
+[pip3 install moviepy]
+certifi-2021.10.8 charset-normalizer-2.0.9 decorator-4.4.2 idna-3.3 imageio-2.13.3 imageio-ffmpeg-0.4.5 moviepy-1.0.3 pillow-8.4.0 proglog-0.1.9 requests-2.26.0 tqdm-4.62.3 urllib3-1.26.7
+
+[pip3 install PyQt5]
+PyQt5-5.15.6 PyQt5-Qt5-5.15.2 PyQt5-sip-12.9.0
