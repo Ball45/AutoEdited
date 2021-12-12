@@ -1,9 +1,7 @@
 *.mp4
 *.wav
-
-
-# Add by Chin
 media/
+.vscode/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
