@@ -42,16 +42,6 @@
     - 計畫結案報告 。
 
 
-## TO DO
-- [x] Learn python
-- [x] Learn how to use git
-- [x] Learn how to use conda
-- [x] Learn how to use pip
-- [ ] Learn how to use PyQt5
-- [ ] Learn how to use moviepy
-- [ ] Learn how to use FFMPEG
-- [ ] Learn how to use GUI
-
 ## Reference
 - [sololearn](https://www.sololearn.com/learning/1073)
 - [anaconda](https://docs.anaconda.com/)
